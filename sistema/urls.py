@@ -18,15 +18,10 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from progresso import views as progresso_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('Aplicativo.urls')),
-
-    path('progresso/aluno/<int:aluno_id>/', progresso_views.detalhes_aluno,name='detalhes_aluno'),
-    path('progresso/aluno/<int:aluno_id>/historico/', progresso_views.historico_progresso, name='historico_progresso'),
-    path('progresso/aluno/<int:aluno_id>/filtrado/', progresso_views.progresso_filtrado, name='progresso_filtrado'),
 ]
 
 

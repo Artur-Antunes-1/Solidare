@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib.auth import login,authenticate,logout
 from django.contrib import messages
-from .models import Aluno, Doacao, Boletim, ComentarioProfessor, Perfil,Profile
+from .models import Aluno, Doacao, Boletim, ComentarioProfessor, Perfil,Profile, Desempenho
 from django.db import IntegrityError
 from .models import Apadrinhado
 from django.http import HttpResponseForbidden
@@ -294,4 +294,52 @@ def perfil_view(request):
         'foto': profile.foto.url if profile.foto else None,
         'profile': profile,
         'is_editing': is_editing,
+    })
+
+def detalhes_aluno(request, aluno_id):
+    """Cenário 1: Consulta ao boletim do aluno"""
+    aluno = get_object_or_404(Apadrinhado, id=aluno_id)
+    desempenho = Desempenho.objects.filter(apadrinhado=aluno).order_by('mes')
+    return render(request, 'progresso/detalhes_aluno.html', {
+        'aluno': aluno,
+        'desempenho': desempenho
+    })
+
+def historico_progresso(request, aluno_id):
+    """Cenário 2: Relatórios de progresso periódicos - gráficos e estatísticas"""
+    aluno = get_object_or_404(Apadrinhado, id=aluno_id)
+    desempenho = Desempenho.objects.filter(apadrinhado=aluno).order_by('mes')
+
+    meses = [d.mes for d in desempenho]
+    notas = [float(d.nota) for d in desempenho]
+    frequencias = [float(d.frequencia) for d in desempenho]
+
+    context = {
+        'aluno': aluno,
+        'meses': meses,
+        'notas': notas,
+        'frequencias': frequencias,
+    }
+    return render(request, 'progresso/historico_progresso.html', context)
+
+def progresso_filtrado(request, aluno_id):
+    """Cenário 3: Relatórios personalizados com filtros via GET"""
+    aluno = get_object_or_404(Apadrinhado, id=aluno_id)
+    filtro = request.GET.get('filtro', 'nota')  # 'nota', 'frequencia' ou 'comentario'
+
+    desempenho = Desempenho.objects.filter(apadrinhado=aluno).order_by('mes')
+
+    if filtro == 'nota':
+        dados = [(d.mes, d.nota) for d in desempenho]
+    elif filtro == 'frequencia':
+        dados = [(d.mes, d.frequencia) for d in desempenho]
+    elif filtro == 'comentario':
+        dados = [(d.mes, d.comentario_professor) for d in desempenho]
+    else:
+        dados = []
+
+    return render(request, 'progresso/progresso_filtrado.html', {
+        'aluno': aluno,
+        'dados': dados,
+        'filtro': filtro,
     })

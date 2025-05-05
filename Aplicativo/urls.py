@@ -2,6 +2,7 @@ from django.urls import path
 from .views import editar_apadrinhados, excluir_apadrinhado, home_admin_view, home_view, mensagens_view, doacoes_view, progresso_view
 from .views import impacto_view, banco_talentos_view, registrar_view, apadrinhamento_view,logout_view, apadrinhar_detalhes, meus_apadrinhados_view
 from .views import perfil_view, registrar_apadrinhado_view,login_view,lista_apadrinhados,editar_apadrinhados, indicar_aluno, registrar_contratacao
+from .views import detalhes_aluno, historico_progresso, progresso_filtrado
 from django.shortcuts import render
 
 urlpatterns = [
@@ -26,4 +27,7 @@ urlpatterns = [
     path('indicar/', indicar_aluno, name='indicar_aluno'),
     path('contratar/', registrar_contratacao, name='registrar_contratacao'),
     path('sucesso/', lambda request: render(request, 'sucesso.html'), name='sucesso_contratacao'),
+    path('aluno/<int:aluno_id>/boletim/', detalhes_aluno, name='boletim_aluno'),
+    path('aluno/<int:aluno_id>/graficos/', historico_progresso, name='historico_progresso'),
+    path('aluno/<int:aluno_id>/filtro/', progresso_filtrado, name='progresso_filtrado'),
 ]
