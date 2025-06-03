@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+  <h2>Minhas Solicitações de Visita</h2>
+
+  {% if visitas %}
+    <table>
+      <thead>
+        <tr>
+          <th>Apadrinhado</th>
+          <th>Data</th>
+          <th>Hora</th>
+          <th>Motivo</th>
+          <th>Status</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for visita in visitas %}
+          <tr>
+            <td>{{ visita.apadrinhado.nome }}</td>
+            <td>{{ visita.data }}</td>
+            <td>{{ visita.hora }}</td>
+            <td>{{ visita.motivo|truncatechars:20 }}</td>
+            <td>
+              {% if visita.status == 'Pendente' %}
+                <span style="color: orange">{{ visita.status }}</span>
+              {% elif visita.status == 'Confirmada' %}
+                <span style="color: green">{{ visita.status }}</span>
+              {% else %}
+                <span style="color: red">{{ visita.status }}</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if visita.status != 'Cancelada' %}
+                <form action="{% url 'cancelar_visita' visita.id %}" method="post" style="display:inline;">
+                  {% csrf_token %}
+                  <button type="submit" onclick="return confirm('Tem certeza que deseja cancelar?');">
+                    Cancelar
+                  </button>
+                </form>
+              {% else %}
+                —
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p>Você ainda não solicitou nenhuma visita.</p>
+  {% endif %}
+
+  <p><a href="{% url 'home' %}">← Voltar ao início</a></p>
+{% endblock %}

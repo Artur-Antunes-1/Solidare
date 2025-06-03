@@ -1,0 +1,49 @@
+{% extends 'baseAdmin.html' %}
+{% load static %}
+{% block content %}
+  <h2>Visitas Pendentes de Aprovação</h2>
+
+  {% if visitas %}
+    <table>
+      <thead>
+        <tr>
+          <th>Padrinho</th>
+          <th>Apadrinhado</th>
+          <th>Data</th>
+          <th>Hora</th>
+          <th>Motivo</th>
+          <th>Solicitado em</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for visita in visitas %}
+          <tr>
+            <td>{{ visita.padrinho.username }}</td>
+            <td>{{ visita.apadrinhado.nome }}</td>
+            <td>{{ visita.data }}</td>
+            <td>{{ visita.hora }}</td>
+            <td>{{ visita.motivo|truncatechars:30 }}</td>
+            <td>{{ visita.data_solicitacao }}</td>
+            <td>
+              <form action="{% url 'aprovar_visita' visita.id %}" method="post" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit">Aprovar</button>
+              </form>
+              <form action="{% url 'recusar_visita' visita.id %}" method="post" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" onclick="return confirm('Tem certeza que deseja recusar?');">
+                  Recusar
+                </button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p>Não há visitas pendentes no momento.</p>
+  {% endif %}
+
+  <p><a href="{% url 'homeAdmin' %}">← Voltar ao painel de administrador</a></p>
+{% endblock %}

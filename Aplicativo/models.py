@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.utils import timezone
 
 # MODELS
 class Perfil(models.Model):
@@ -132,3 +133,33 @@ class Desempenho(models.Model):
     def __str__(self):
         # Exibe “<nome do apadrinhado> – <mês>”
         return f"{self.apadrinhado.nome} - {self.mes}"
+    
+class Visita(models.Model):
+    STATUS_CHOICES = (
+        ('Pendente', 'Pendente'),
+        ('Confirmada', 'Confirmada'),
+        ('Cancelada', 'Cancelada'),
+    )
+
+    padrinho = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='visitas_solicitadas'
+    )
+    apadrinhado = models.ForeignKey(
+        Apadrinhado,
+        on_delete=models.CASCADE,
+        related_name='visitas_recebidas'
+    )
+    data = models.DateField()
+    hora = models.TimeField()
+    motivo = models.TextField()
+    status = models.CharField(
+        max_length=10,
+        choices=STATUS_CHOICES,
+        default='Pendente'
+    )
+    data_solicitacao = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Visita de {self.padrinho.username} a {self.apadrinhado.nome} em {self.data} {self.hora} ({self.status})"

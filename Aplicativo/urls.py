@@ -45,4 +45,28 @@ urlpatterns = [
         views.progresso_filtrado,
         name='progresso_filtrado'
     ),
+
+    path('agendar-visita/<int:apadrinhado_id>/',
+        views.agendar_visita_view,
+        name='agendar_visita'),
+
+    path('minhas-visitas/',
+        views.minhas_visitas_view,
+        name='minhas_visitas'),
+
+    path('cancelar-visita/<int:visita_id>/',
+        views.cancelar_visita_view,
+        name='cancelar_visita'),
+
+    path('adm/visitas-pendentes/',
+        views.visitas_pendentes_view,
+        name='visitas_pendentes'),
+
+    path('adm/aprovar-visita/<int:visita_id>/',
+        views.aprovar_visita_view,
+        name='aprovar_visita'),
+
+    path('adm/recusar-visita/<int:visita_id>/',
+        views.recusar_visita_view,
+        name='recusar_visita'),
 ]

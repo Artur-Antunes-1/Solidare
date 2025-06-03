@@ -18,6 +18,7 @@ from .models import (
     Indicacao,
     Perfil,
     Profile,
+    Visita,
 )
 
 def home_view(request):
@@ -369,3 +370,149 @@ def progresso_filtrado(request, apadrinhado_id):
         'dados': dados,
         'filtro': filtro,
     })
+
+@login_required
+def agendar_visita_view(request, apadrinhado_id):
+    # Apenas padrinhos podem agendar (todos usuários que não sejam admin, por exemplo).
+    # Aqui pressupomos que 'administrador' é o tipo de perfil que não faz agendamentos.
+    try:
+        tipo = request.user.perfil.tipo_usuario
+    except Perfil.DoesNotExist:
+        return HttpResponseForbidden("Perfil não encontrado.")
+
+    if tipo == 'administrador':
+        return HttpResponseForbidden("Administradores não podem agendar visita como padrinho.")
+
+    apadrinhado = get_object_or_404(Apadrinhado, id=apadrinhado_id)
+
+    # Verifica se este apadrinhado já está com outro padrinho?
+    # Se quiser permitir apenas padrinhos já vinculados, faça:
+    # if apadrinhado.apadrinhado_por != request.user:
+    #     return HttpResponseForbidden("Você não é padrinho deste aluno.")
+
+    if request.method == 'POST':
+        data = request.POST.get('data')
+        hora = request.POST.get('hora')
+        motivo = request.POST.get('motivo', '').strip()
+
+        erros = []
+        if not data:
+            erros.append("Data é obrigatória.")
+        if not hora:
+            erros.append("Hora é obrigatória.")
+        if not motivo:
+            erros.append("Motivo é obrigatório.")
+
+        if erros:
+            for erro in erros:
+                messages.error(request, erro)
+            # Re-renderiza o form com os erros
+            return render(request, 'agendar_visita.html', {
+                'apadrinhado': apadrinhado,
+                'data': data,
+                'hora': hora,
+                'motivo': motivo,
+            })
+
+        # Cria a visita com status “Pendente”
+        Visita.objects.create(
+            padrinho=request.user,
+            apadrinhado=apadrinhado,
+            data=data,
+            hora=hora,
+            motivo=motivo,
+            status='Pendente'
+        )
+
+        messages.success(request, "Visita solicitada com sucesso! Aguarde aprovação do administrador.")
+        return redirect('minhas_visitas')
+
+    # GET: exibe formulário em branco
+    return render(request, 'agendar_visita.html', {
+        'apadrinhado': apadrinhado
+    })
+
+@login_required
+def minhas_visitas_view(request):
+    visitas = Visita.objects.filter(padrinho=request.user).order_by('-data_solicitacao')
+    return render(request, 'minhas_visitas.html', {
+        'visitas': visitas
+    })
+
+@login_required
+def cancelar_visita_view(request, visita_id):
+    visita = get_object_or_404(Visita, id=visita_id)
+
+    # Só o próprio padrinho da visita pode cancelar
+    if visita.padrinho != request.user:
+        return HttpResponseForbidden("Você não tem permissão para cancelar esta visita.")
+
+    # Se já estiver cancelada, apenas redireciona
+    if visita.status == 'Cancelada':
+        messages.info(request, "Visita já está cancelada.")
+        return redirect('minhas_visitas')
+
+    # Permite cancelar visitas pendentes ou confirmadas
+    visita.status = 'Cancelada'
+    visita.save()
+    messages.success(request, "Visita cancelada com sucesso.")
+    return redirect('minhas_visitas')
+
+@login_required
+def visitas_pendentes_view(request):
+    try:
+        perfil = request.user.perfil
+    except Perfil.DoesNotExist:
+        return HttpResponseForbidden("Perfil não encontrado.")
+
+    if perfil.tipo_usuario != 'administrador':
+        return HttpResponseForbidden("Acesso restrito a administradores.")
+
+    visitas_pendentes = Visita.objects.filter(status='Pendente').order_by('data', 'hora')
+    return render(request, 'visitas_pendentes.html', {
+        'visitas': visitas_pendentes
+    })
+
+@login_required
+def aprovar_visita_view(request, visita_id):
+    try:
+        perfil = request.user.perfil
+    except Perfil.DoesNotExist:
+        return HttpResponseForbidden("Perfil não encontrado.")
+
+    if perfil.tipo_usuario != 'administrador':
+        return HttpResponseForbidden("Acesso restrito a administradores.")
+
+    visita = get_object_or_404(Visita, id=visita_id)
+
+    # Só aprova se estiver pendente
+    if visita.status != 'Pendente':
+        messages.error(request, "Esta visita não está mais pendente.")
+        return redirect('visitas_pendentes')
+
+    visita.status = 'Confirmada'
+    visita.save()
+    messages.success(request, f"Visita de {visita.padrinho.username} a {visita.apadrinhado.nome} confirmada.")
+    return redirect('visitas_pendentes')
+
+@login_required
+def recusar_visita_view(request, visita_id):
+    try:
+        perfil = request.user.perfil
+    except Perfil.DoesNotExist:
+        return HttpResponseForbidden("Perfil não encontrado.")
+
+    if perfil.tipo_usuario != 'administrador':
+        return HttpResponseForbidden("Acesso restrito a administradores.")
+
+    visita = get_object_or_404(Visita, id=visita_id)
+
+    # Só recusar se estiver pendente
+    if visita.status != 'Pendente':
+        messages.error(request, "Esta visita não está mais pendente.")
+        return redirect('visitas_pendentes')
+
+    visita.status = 'Cancelada'
+    visita.save()
+    messages.success(request, f"Visita de {visita.padrinho.username} a {visita.apadrinhado.nome} recusada.")
+    return redirect('visitas_pendentes')
