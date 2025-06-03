@@ -1,12 +1,11 @@
-<!-- progresso/templates/progresso/detalhes_aluno.html -->
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8" />
-  <title>Boletim de {{ aluno.nome }}</title>
+  <title>Boletim de {{ apadrinhado.nome }}</title>
 </head>
 <body>
-  <h1>Boletim do aluno: {{ aluno.nome }}</h1>
+  <h1>Boletim do apadrinhado: {{ apadrinhado.nome }}</h1>
   
   <table border="1" cellpadding="5">
     <thead>
@@ -26,12 +25,14 @@
         <td>{{ d.comentario_professor }}</td>
       </tr>
       {% empty %}
-      <tr><td colspan="4">Nenhum registro de desempenho encontrado.</td></tr>
+      <tr>
+        <td colspan="4">Nenhum registro de desempenho encontrado.</td>
+      </tr>
       {% endfor %}
     </tbody>
   </table>
 
-  <p><a href="{% url 'historico_progresso' aluno.id %}">Ver gráficos de progresso</a></p>
-  <p><a href="{% url 'progresso_filtrado' aluno.id %}">Relatórios personalizados</a></p>
+  <p><a href="{% url 'historico_progresso' apadrinhado.id %}">Ver gráficos de progresso</a></p>
+  <p><a href="{% url 'progresso_filtrado' apadrinhado.id %}">Relatórios personalizados</a></p>
 </body>
 </html>

@@ -109,10 +109,7 @@ class Apadrinhado(models.Model):
 
     nome = models.CharField(max_length=100)
     idade = models.PositiveIntegerField()
-    genero = models.CharField(
-        max_length=1,
-        choices=GENERO_CHOICES,   # use exatamente o mesmo nome e maiúsculas
-    )
+    genero = models.CharField(max_length=1, choices=GENERO_CHOICES)
     apadrinhado_por = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -121,12 +118,17 @@ class Apadrinhado(models.Model):
         null=True,
     )
 
+    def __str__(self):
+        return self.nome
+
+
 class Desempenho(models.Model):
-    apadrinhado = models.ForeignKey('Aplicativo.Apadrinhado', on_delete=models.CASCADE)
-    mes = models.CharField(max_length=20)  
+    apadrinhado = models.ForeignKey(Apadrinhado, on_delete=models.CASCADE)
+    mes = models.CharField(max_length=20)
     nota = models.DecimalField(max_digits=4, decimal_places=2)
-    frequencia = models.DecimalField(max_digits=5, decimal_places=2)  
+    frequencia = models.DecimalField(max_digits=5, decimal_places=2)
     comentario_professor = models.TextField(blank=True)
 
     def __str__(self):
+        # Exibe “<nome do apadrinhado> – <mês>”
         return f"{self.apadrinhado.nome} - {self.mes}"

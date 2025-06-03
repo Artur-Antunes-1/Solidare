@@ -1,13 +1,23 @@
-from django.shortcuts import render, redirect,get_object_or_404
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.contrib.auth import login,authenticate,logout
+from django.contrib.auth import login, authenticate, logout
 from django.contrib import messages
-from .models import Aluno, Doacao, Boletim, ComentarioProfessor, Perfil,Profile, Desempenho
 from django.db import IntegrityError
-from .models import Apadrinhado
 from django.http import HttpResponseForbidden
-from .models import Indicacao, Contratacao
+
+from .models import (
+    Aluno,
+    Apadrinhado,
+    Boletim,
+    ComentarioProfessor,
+    Contratacao,
+    Desempenho,
+    Doacao,
+    Indicacao,
+    Perfil,
+    Profile,
+)
 
 def home_view(request):
     return render(request, 'home.html')
@@ -296,50 +306,61 @@ def perfil_view(request):
         'is_editing': is_editing,
     })
 
-def detalhes_aluno(request, aluno_id):
-    """Cenário 1: Consulta ao boletim do aluno"""
-    aluno = get_object_or_404(Apadrinhado, id=aluno_id)
-    desempenho = Desempenho.objects.filter(apadrinhado=aluno).order_by('mes')
+@login_required
+def detalhes_aluno(request, apadrinhado_id):
+    """
+    Cenário 1: Consulta ao boletim do apadrinhado (notas, frequência, comentários).
+    """
+    apadrinhado = get_object_or_404(Apadrinhado, id=apadrinhado_id)
+    desempenho = Desempenho.objects.filter(apadrinhado=apadrinhado).order_by('mes')
     return render(request, 'progresso/detalhes_aluno.html', {
-        'aluno': aluno,
-        'desempenho': desempenho
+        'apadrinhado': apadrinhado,
+        'desempenho': desempenho,
     })
 
-def historico_progresso(request, aluno_id):
-    """Cenário 2: Relatórios de progresso periódicos - gráficos e estatísticas"""
-    aluno = get_object_or_404(Apadrinhado, id=aluno_id)
-    desempenho = Desempenho.objects.filter(apadrinhado=aluno).order_by('mes')
+@login_required
+def historico_progresso(request, apadrinhado_id):
+    """
+    Cenário 2: Relatórios de progresso periódicos – gráficos e estatísticas.
+    """
+    apadrinhado = get_object_or_404(Apadrinhado, id=apadrinhado_id)
+    desempenho = Desempenho.objects.filter(apadrinhado=apadrinhado).order_by('mes')
 
-    meses = [d.mes for d in desempenho]
-    notas = [float(d.nota) for d in desempenho]
-    frequencias = [float(d.frequencia) for d in desempenho]
+    # Extrai listas para construir os gráficos
+    meses = [registro.mes for registro in desempenho]
+    notas = [float(registro.nota) for registro in desempenho]
+    frequencias = [float(registro.frequencia) for registro in desempenho]
 
     context = {
-        'aluno': aluno,
+        'apadrinhado': apadrinhado,
         'meses': meses,
         'notas': notas,
         'frequencias': frequencias,
     }
     return render(request, 'progresso/historico_progresso.html', context)
 
-def progresso_filtrado(request, aluno_id):
-    """Cenário 3: Relatórios personalizados com filtros via GET"""
-    aluno = get_object_or_404(Apadrinhado, id=aluno_id)
-    filtro = request.GET.get('filtro', 'nota')  # 'nota', 'frequencia' ou 'comentario'
+@login_required
+def progresso_filtrado(request, apadrinhado_id):
+    """
+    Cenário 3: Relatórios personalizados com filtros via GET
+    Parâmetro 'filtro' pode ser: 'nota', 'frequencia' ou 'comentario'.
+    """
+    apadrinhado = get_object_or_404(Apadrinhado, id=apadrinhado_id)
+    filtro = request.GET.get('filtro', 'nota')  # valor padrão: nota
 
-    desempenho = Desempenho.objects.filter(apadrinhado=aluno).order_by('mes')
+    desempenho = Desempenho.objects.filter(apadrinhado=apadrinhado).order_by('mes')
 
     if filtro == 'nota':
-        dados = [(d.mes, d.nota) for d in desempenho]
+        dados = [(registro.mes, registro.nota) for registro in desempenho]
     elif filtro == 'frequencia':
-        dados = [(d.mes, d.frequencia) for d in desempenho]
+        dados = [(registro.mes, registro.frequencia) for registro in desempenho]
     elif filtro == 'comentario':
-        dados = [(d.mes, d.comentario_professor) for d in desempenho]
+        dados = [(registro.mes, registro.comentario_professor) for registro in desempenho]
     else:
         dados = []
 
     return render(request, 'progresso/progresso_filtrado.html', {
-        'aluno': aluno,
+        'apadrinhado': apadrinhado,
         'dados': dados,
         'filtro': filtro,
     })

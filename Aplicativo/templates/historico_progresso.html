@@ -2,21 +2,18 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8" />
-  <title>Gráficos de Progresso - {{ aluno.nome }}</title>
+  <title>Gráficos de Progresso - {{ apadrinhado.nome }}</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-  <h1>Gráficos de Progresso - {{ aluno.nome }}</h1>
+  <h1>Gráficos de Progresso - {{ apadrinhado.nome }}</h1>
 
   <canvas id="graficoNotas" width="600" height="300"></canvas>
   <canvas id="graficoFrequencia" width="600" height="300" style="margin-top: 30px;"></canvas>
 
-  <p><a href="{% url 'boletim_aluno' aluno.id %}">Voltar ao boletim</a></p>
+  <p><a href="{% url 'detalhes_aluno' apadrinhado.id %}">Voltar ao boletim</a></p>
 
-  <!-- Importa json para uso no template -->
   {% load json_script %}
-
-  <!-- Passa os dados em JSON com segurança -->
   {{ meses|json_script:"meses-data" }}
   {{ notas|json_script:"notas-data" }}
   {{ frequencias|json_script:"frequencias-data" }}
@@ -27,7 +24,7 @@
     const frequencias = JSON.parse(document.getElementById('frequencias-data').textContent);
 
     const ctxNotas = document.getElementById('graficoNotas').getContext('2d');
-    const graficoNotas = new Chart(ctxNotas, {
+    new Chart(ctxNotas, {
       type: 'line',
       data: {
         labels: meses,
@@ -47,7 +44,7 @@
     });
 
     const ctxFreq = document.getElementById('graficoFrequencia').getContext('2d');
-    const graficoFreq = new Chart(ctxFreq, {
+    new Chart(ctxFreq, {
       type: 'line',
       data: {
         labels: meses,
