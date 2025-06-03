@@ -1,7 +1,7 @@
 import os
 import django
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'bola_na_gaveta.settings')  
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'sistema.settings')  
 django.setup()
 
 from django.contrib.auth.models import User

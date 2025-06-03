@@ -7,6 +7,7 @@ Cypress.Commands.add('deleteUsers', () => {
     });
   });
 
+ 
 
 Cypress.Commands.add('cadastroAdministrador', () => {
     cy.visit('/');
@@ -17,13 +18,13 @@ Cypress.Commands.add('cadastroAdministrador', () => {
     cy.get('#id_email').type('cypress@teste.com');
     cy.get('#id_password1').type('12345');
     cy.get('#id_password2').type('12345');
-    cy.get('button').click();
+    cy.get('.auth-box > form > button').click();
 });
 
 Cypress.Commands.add('loginAdministrador', () => {
   cy.get('#username').type('teste administrador');
   cy.get('#password').type('12345');
-  cy.get('button').click();
+  cy.get('.auth-box > form > button').click();
 });
 
 describe('cadastro como administrador', () => {
