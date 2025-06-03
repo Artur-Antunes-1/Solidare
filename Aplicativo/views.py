@@ -5,6 +5,7 @@ from django.contrib.auth import login, authenticate, logout
 from django.contrib import messages
 from django.db import IntegrityError
 from django.http import HttpResponseForbidden
+import json
 
 from .models import (
     Aluno,
@@ -313,7 +314,7 @@ def detalhes_aluno(request, apadrinhado_id):
     """
     apadrinhado = get_object_or_404(Apadrinhado, id=apadrinhado_id)
     desempenho = Desempenho.objects.filter(apadrinhado=apadrinhado).order_by('mes')
-    return render(request, 'progresso/detalhes_aluno.html', {
+    return render(request, 'detalhes_aluno.html', {
         'apadrinhado': apadrinhado,
         'desempenho': desempenho,
     })
@@ -321,23 +322,27 @@ def detalhes_aluno(request, apadrinhado_id):
 @login_required
 def historico_progresso(request, apadrinhado_id):
     """
-    Cenário 2: Relatórios de progresso periódicos – gráficos e estatísticas.
+    Cenário 2: Relatórios de progresso periódicos - gráficos e estatísticas
     """
     apadrinhado = get_object_or_404(Apadrinhado, id=apadrinhado_id)
     desempenho = Desempenho.objects.filter(apadrinhado=apadrinhado).order_by('mes')
 
-    # Extrai listas para construir os gráficos
-    meses = [registro.mes for registro in desempenho]
-    notas = [float(registro.nota) for registro in desempenho]
-    frequencias = [float(registro.frequencia) for registro in desempenho]
+    meses = [d.mes for d in desempenho]
+    notas = [float(d.nota) for d in desempenho]
+    frequencias = [float(d.frequencia) for d in desempenho]
+
+    # Serializa cada lista em string JSON
+    meses_json = json.dumps(meses)
+    notas_json = json.dumps(notas)
+    frequencias_json = json.dumps(frequencias)
 
     context = {
         'apadrinhado': apadrinhado,
-        'meses': meses,
-        'notas': notas,
-        'frequencias': frequencias,
+        'meses_json': meses_json,
+        'notas_json': notas_json,
+        'frequencias_json': frequencias_json,
     }
-    return render(request, 'progresso/historico_progresso.html', context)
+    return render(request, 'historico_progresso.html', context)
 
 @login_required
 def progresso_filtrado(request, apadrinhado_id):
@@ -359,7 +364,7 @@ def progresso_filtrado(request, apadrinhado_id):
     else:
         dados = []
 
-    return render(request, 'progresso/progresso_filtrado.html', {
+    return render(request, 'progresso_filtrado.html', {
         'apadrinhado': apadrinhado,
         'dados': dados,
         'filtro': filtro,

@@ -37,6 +37,7 @@
                                 {% endif %}
                             </td>
                             <td class="action-buttons">
+                                <a href="{% url 'detalhes_aluno' apadrinhado.id %}" class="btn-edit">Boletim</a>
                                 <a href="{% url 'editar_apadrinhado' apadrinhado.id %}" class="btn-edit">Editar</a>
                                 <form method="post" action="{% url 'excluir_apadrinhado' apadrinhado.id %}" class="delete-form">
                                     {% csrf_token %}

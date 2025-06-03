@@ -1,13 +1,13 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-  <meta charset="UTF-8" />
-  <title>Progresso filtrado - {{ apadrinhado.nome }}</title>
-</head>
-<body>
-  <h1>Progresso filtrado - {{ apadrinhado.nome }}</h1>
+{# Aplicativo/templates/progresso/progresso_filtrado.html #}
+{% extends "base.html" %}
+{% load static %}
 
-  <form method="get">
+{% block title %}Progresso Filtrado – {{ apadrinhado.nome }}{% endblock %}
+
+{% block content %}
+  <h1>Progresso Filtrado – {{ apadrinhado.nome }}</h1>
+
+  <form method="get" style="margin-bottom:1rem;">
     <label>Filtro:
       <select name="filtro" onchange="this.form.submit()">
         <option value="nota" {% if filtro == 'nota' %}selected{% endif %}>Notas</option>
@@ -17,7 +17,7 @@
     </label>
   </form>
 
-  <table border="1" cellpadding="5" style="margin-top: 20px;">
+  <table class="table table-bordered" style="max-width: 800px;">
     <thead>
       <tr>
         <th>Mês</th>
@@ -30,18 +30,19 @@
     </thead>
     <tbody>
       {% for mes, valor in dados %}
-      <tr>
-        <td>{{ mes }}</td>
-        <td>{{ valor }}</td>
-      </tr>
+        <tr>
+          <td>{{ mes }}</td>
+          <td>{{ valor }}</td>
+        </tr>
       {% empty %}
-      <tr>
-        <td colspan="2">Nenhum dado encontrado.</td>
-      </tr>
+        <tr>
+          <td colspan="2">Nenhum dado encontrado.</td>
+        </tr>
       {% endfor %}
     </tbody>
   </table>
 
-  <p><a href="{% url 'detalhes_aluno' apadrinhado.id %}">Voltar ao boletim</a></p>
-</body>
-</html>
+  <p style="margin-top:1rem;">
+    <a href="{% url 'detalhes_aluno' apadrinhado.id %}">← Voltar ao boletim</a>
+  </p>
+{% endblock %}

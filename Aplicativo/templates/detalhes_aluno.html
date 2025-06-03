@@ -1,13 +1,12 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-  <meta charset="UTF-8" />
-  <title>Boletim de {{ apadrinhado.nome }}</title>
-</head>
-<body>
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Boletim – {{ apadrinhado.nome }}{% endblock %}
+
+{% block content %}
   <h1>Boletim do apadrinhado: {{ apadrinhado.nome }}</h1>
-  
-  <table border="1" cellpadding="5">
+
+  <table class="table table-bordered" style="max-width: 800px; margin-bottom: 1rem;">
     <thead>
       <tr>
         <th>Mês</th>
@@ -18,21 +17,30 @@
     </thead>
     <tbody>
       {% for d in desempenho %}
-      <tr>
-        <td>{{ d.mes }}</td>
-        <td>{{ d.nota }}</td>
-        <td>{{ d.frequencia }}</td>
-        <td>{{ d.comentario_professor }}</td>
-      </tr>
+        <tr>
+          <td>{{ d.mes }}</td>
+          <td>{{ d.nota }}</td>
+          <td>{{ d.frequencia }}</td>
+          <td>{{ d.comentario_professor }}</td>
+        </tr>
       {% empty %}
-      <tr>
-        <td colspan="4">Nenhum registro de desempenho encontrado.</td>
-      </tr>
+        <tr>
+          <td colspan="4">Nenhum registro de desempenho encontrado.</td>
+        </tr>
       {% endfor %}
     </tbody>
   </table>
 
-  <p><a href="{% url 'historico_progresso' apadrinhado.id %}">Ver gráficos de progresso</a></p>
-  <p><a href="{% url 'progresso_filtrado' apadrinhado.id %}">Relatórios personalizados</a></p>
-</body>
-</html>
+  <div style="margin-bottom: 1.5rem;">
+    <a class="btn btn-primary" href="{% url 'historico_progresso' apadrinhado.id %}">
+      Ver gráficos de progresso
+    </a>
+    <a class="btn btn-secondary" href="{% url 'progresso_filtrado' apadrinhado.id %}" style="margin-left: 0.5rem;">
+      Relatórios personalizados
+    </a>
+  </div>
+
+  <p>
+    <a href="{% url 'meus_apadrinhados' %}">← Voltar aos meus apadrinhados</a>
+  </p>
+{% endblock %}

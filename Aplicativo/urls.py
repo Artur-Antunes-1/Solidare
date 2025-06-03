@@ -2,8 +2,6 @@ from django.urls import path
 from . import views
 from django.shortcuts import render
 
-app_name = 'Aplicativo'  
-
 urlpatterns = [
     path('', views.home_view, name='home'),
     path('home/admin/', views.home_admin_view, name='homeAdmin'),

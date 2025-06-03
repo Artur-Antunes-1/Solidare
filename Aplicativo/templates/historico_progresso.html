@@ -1,28 +1,29 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-  <meta charset="UTF-8" />
-  <title>Gráficos de Progresso - {{ apadrinhado.nome }}</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-</head>
-<body>
-  <h1>Gráficos de Progresso - {{ apadrinhado.nome }}</h1>
+{# Aplicativo/templates/progresso/historico_progresso.html #}
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Gráficos de Progresso – {{ apadrinhado.nome }}{% endblock %}
+
+{% block content %}
+  <h1>Gráficos de Progresso – {{ apadrinhado.nome }}</h1>
 
   <canvas id="graficoNotas" width="600" height="300"></canvas>
   <canvas id="graficoFrequencia" width="600" height="300" style="margin-top: 30px;"></canvas>
 
-  <p><a href="{% url 'detalhes_aluno' apadrinhado.id %}">Voltar ao boletim</a></p>
+  <p style="margin-top: 1rem;">
+    <a href="{% url 'detalhes_aluno' apadrinhado.id %}" class="btn btn-secondary">
+      ← Voltar ao boletim
+    </a>
+  </p>
 
-  {% load json_script %}
-  {{ meses|json_script:"meses-data" }}
-  {{ notas|json_script:"notas-data" }}
-  {{ frequencias|json_script:"frequencias-data" }}
-
+  {# Aqui já recebemos da view as strings JSON: meses_json, notas_json, frequencias_json #}
   <script>
-    const meses = JSON.parse(document.getElementById('meses-data').textContent);
-    const notas = JSON.parse(document.getElementById('notas-data').textContent);
-    const frequencias = JSON.parse(document.getElementById('frequencias-data').textContent);
+    // Converte as strings passadas no contexto em arrays JS
+    const meses = JSON.parse('{{ meses_json|escapejs }}');
+    const notas = JSON.parse('{{ notas_json|escapejs }}');
+    const frequencias = JSON.parse('{{ frequencias_json|escapejs }}');
 
+    // Desenha o gráfico de Notas
     const ctxNotas = document.getElementById('graficoNotas').getContext('2d');
     new Chart(ctxNotas, {
       type: 'line',
@@ -37,12 +38,11 @@
         }]
       },
       options: {
-        scales: {
-          y: { min: 0, max: 10 }
-        }
+        scales: { y: { min: 0, max: 10 } }
       }
     });
 
+    // Desenha o gráfico de Frequência
     const ctxFreq = document.getElementById('graficoFrequencia').getContext('2d');
     new Chart(ctxFreq, {
       type: 'line',
@@ -57,11 +57,8 @@
         }]
       },
       options: {
-        scales: {
-          y: { min: 0, max: 100 }
-        }
+        scales: { y: { min: 0, max: 100 } }
       }
     });
   </script>
-</body>
-</html>
+{% endblock %}

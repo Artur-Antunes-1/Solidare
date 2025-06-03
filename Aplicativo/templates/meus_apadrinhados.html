@@ -17,20 +17,23 @@
 
 <section class="my-sponsor-section">
   <h2>Meus Apadrinhados</h2>
-  {% if apadrinhados %}
-    <ul class="my-sponsor-grid">
-      {% for aluno in apadrinhados %}
-        <li class="my-sponsor-card">
-          {% if aluno.foto %}
-            <img src="{{ aluno.foto.url }}" alt="{{ aluno.nome }}">
-          {% endif %}
-          <h3>{{ aluno.nome }}</h3>
-          <p><a href="{% url 'progresso' aluno.id %}" class="btn-progress">Ver Progresso</a></p>
-        </li>
-      {% endfor %}
-    </ul>
-  {% else %}
-    <p class="no-data">Você ainda não apadrinhou ninguém.</p>
-  {% endif %}
+  <ul>
+    {% for ap in apadrinhados %}
+      <li class="my-sponsor-card">
+        {% if ap.foto %}
+          <img src="{{ ap.foto.url }}" alt="{{ ap.nome }}">
+        {% endif %}
+        <h3>{{ ap.nome }}</h3>
+        <p>
+          <!-- Aqui o link “Ver Progresso” chama o boletim de cada apadrinhado -->
+          <a href="{% url 'detalhes_aluno' ap.id %}" class="btn-progress">
+            Ver Progresso
+          </a>
+        </p>
+      </li>
+    {% empty %}
+      <p>Você não possui apadrinhados cadastrados.</p>
+    {% endfor %}
+  </ul>
 </section>
 {% endblock %}
