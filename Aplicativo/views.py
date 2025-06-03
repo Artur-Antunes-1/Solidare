@@ -315,8 +315,15 @@ def detalhes_aluno(request, apadrinhado_id):
     """
     apadrinhado = get_object_or_404(Apadrinhado, id=apadrinhado_id)
     desempenho = Desempenho.objects.filter(apadrinhado=apadrinhado).order_by('mes')
+
+    if request.user.perfil.tipo_usuario == 'administrador':
+        base = 'homeAdmin.html'
+    else:
+        base = 'home.html'
+
     return render(request, 'detalhes_aluno.html', {
         'apadrinhado': apadrinhado,
+        'base_template': base,
         'desempenho': desempenho,
     })
 
