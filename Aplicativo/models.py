@@ -46,14 +46,6 @@ class Aluno(models.Model):
     def __str__(self):
         return self.nome
 
-
-class Mensagem(models.Model):
-    remetente = models.ForeignKey(User, on_delete=models.CASCADE)
-    destinatario = models.ForeignKey(Aluno, on_delete=models.CASCADE)
-    texto = models.TextField()
-    timestamp = models.DateTimeField(auto_now_add=True)
-    entregue = models.BooleanField(default=False)
-
 class Doacao(models.Model):
     TIPO_CHOICES = [('Financeira', 'Financeira'), ('Material', 'Material')]
     tipo = models.CharField(max_length=10, choices=TIPO_CHOICES)
@@ -121,6 +113,21 @@ class Apadrinhado(models.Model):
 
     def __str__(self):
         return self.nome
+
+class Mensagem(models.Model):
+    remetente = models.ForeignKey(User, on_delete=models.CASCADE)
+    destinatario = models.ForeignKey(
+        Apadrinhado,
+        on_delete=models.CASCADE,
+        related_name='mensagens'   # <-- agora o reverso será apadrinhado.mensagens
+    )
+    texto = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+    entregue = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"Mensagem de {self.remetente.username} para {self.destinatario.nome} em {self.timestamp}"
+
 
 
 class Desempenho(models.Model):

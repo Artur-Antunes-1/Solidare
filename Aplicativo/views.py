@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth import login, authenticate, logout
 from django.contrib import messages
 from django.db import IntegrityError
+from django.db.models import Count, Q
 from django.http import HttpResponseForbidden
 import json
 
@@ -19,6 +20,7 @@ from .models import (
     Perfil,
     Profile,
     Visita,
+    Mensagem,
 )
 
 def home_view(request):
@@ -154,9 +156,97 @@ def excluir_apadrinhado(request, apadrinhado_id):
 
 @login_required
 def mensagens_view(request):
+    perfil = getattr(request.user, 'perfil', None)
+    if not perfil:
+        return HttpResponseForbidden("Perfil não encontrado.")
+
+    if perfil.tipo_usuario != 'colaborador':
+        # Se não for colaborador, redireciona ao painel de pendentes (admin)
+        return redirect('mensagens_pendentes')
+
+    # Filtra apenas os apadrinhados que pertencem a este colaborador
+    meus_apadrinhados = Apadrinhado.objects.filter(apadrinhado_por=request.user)
+
+    if request.method == 'POST':
+        ap_id = request.POST.get('apadrinhado_id')
+        texto = request.POST.get('texto', '').strip()
+        if ap_id and texto:
+            # Garante que o colaborador só envie mensagem a um apadrinhado realmente seu
+            ap = get_object_or_404(Apadrinhado, id=ap_id, apadrinhado_por=request.user)
+            Mensagem.objects.create(
+                remetente=request.user,
+                destinatario=ap,
+                texto=texto,
+                entregue=False   # marca como “pendente” até o admin visualizar
+            )
+        # after sending, volta para a mesma lista de mensagens do colaborador
+        return redirect('mensagens')
+
+    # Ao exibir a página, passamos uma lista de dicionários com cada apadrinhado
+    lista_info = [{'apadrinhado': ap} for ap in meus_apadrinhados]
+    return render(request, 'mensagens.html', {
+        'lista_info': lista_info,
+    })
+
+
+@login_required
+def mensagens_pendentes_view(request):
+    perfil = getattr(request.user, 'perfil', None)
+    if not perfil or perfil.tipo_usuario != 'administrador':
+        return HttpResponseForbidden("Acesso restrito: apenas administradores podem ver mensagens.")
+
+    # “mensagens” é o related_name que ligamos no modelo Mensagem.destinatario
+    apadrinhados = Apadrinhado.objects.annotate(
+        pendentes=Count('mensagens', filter=Q(mensagens__entregue=False))
+    ).order_by('nome')
+
+    return render(request, 'mensagens_pendentes.html', {
+        'apadrinhados': apadrinhados,
+    })
+
+
+@login_required
+def conversa_aluno(request, aluno_id):
+    perfil = getattr(request.user, 'perfil', None)
+    if not perfil:
+        return HttpResponseForbidden("Perfil não encontrado.")
     
-    alunos = Aluno.objects.filter(apadrinhado_por=request.user)
-    return render(request, 'mensagens.html', {'alunos': alunos})
+    if request.user.perfil.tipo_usuario == 'administrador':
+        base = 'homeAdmin.html'
+    else:
+        base = 'home.html'
+
+    apadrinhado = get_object_or_404(Apadrinhado, id=aluno_id)
+
+    # Se for colaborador, só acessa se ele for padrinho desse apadrinhado
+    if perfil.tipo_usuario == 'colaborador' and apadrinhado.apadrinhado_por != request.user:
+        return HttpResponseForbidden("Você não tem permissão para acessar esta conversa.")
+
+    # Marca todas as mensagens pendentes como entregues (independente de ser GET ou POST)
+    Mensagem.objects.filter(destinatario=apadrinhado, entregue=False).update(entregue=True)
+
+    # Se vier um POST e for admin, cria a mensagem de resposta
+    if request.method == 'POST' and perfil.tipo_usuario == 'administrador':
+        texto_resposta = request.POST.get('texto_resposta', '').strip()
+        if texto_resposta:
+            Mensagem.objects.create(
+                remetente=request.user,
+                destinatario=apadrinhado,
+                texto=texto_resposta,
+                entregue=False  # já cadastra como pendente, para que o colaborador saiba que tem mensagem nova
+            )
+        # Depois redireciona para mesmo view, para recarregar a lista de mensagens (e já marcar como entregues antigas)
+        return redirect('conversa_aluno', aluno_id=aluno_id)
+
+    # Para GET: busca todas as mensagens (já marcadas como entregues na linha anterior)
+    todas_mensagens = Mensagem.objects.filter(destinatario=apadrinhado).order_by('timestamp')
+
+    return render(request, 'conversa_aluno.html', {
+        'apadrinhado': apadrinhado,
+        'mensagens': todas_mensagens,
+        'base_template': base,
+    })
+
 
 @login_required
 def doacoes_view(request):

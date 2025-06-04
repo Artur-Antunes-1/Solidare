@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <title>{% block title %}Solidare{% endblock %}</title>
     <link rel="stylesheet" href="{% static 'base.css' %}">
+    <link rel="stylesheet" href="{% static 'core/css/styles.css' %}">
 </head>
 <body>
     <header style="display: flex; align-items: center; justify-content: space-between;">
@@ -17,6 +18,7 @@
           <a href="{% url 'registrar_apadrinhado' %}">Cadastrar Apadrinhado</a>
           <a href="{% url 'lista_apadrinhados' %}">Lista de Apadrinhados</a>
           <a href="{% url 'visitas_pendentes' %}">Visitas Pendentes</a>
+          <a href="{% url 'mensagens_pendentes' %}">Mensagens Colaboradores</a>
         </nav>
       </div>
       <div style="display: flex; align-items: center;">

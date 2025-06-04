@@ -1,0 +1,85 @@
+/* Para ambos templates de lista de alunos */
+.lista-cards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+.card-aluno {
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 1rem;
+    width: 250px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+}
+.card-aluno h3 {
+    margin: 0 0 0.5rem;
+    font-size: 1.1rem;
+    color: #2c3e50;
+}
+.card-aluno p {
+    margin-bottom: 0.75rem;
+}
+.badge {
+    background-color: #e74c3c;
+    color: #fff;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+.btn-conversa {
+    display: inline-block;
+    padding: 0.4rem 0.8rem;
+    background-color: #3498db;
+    color: #fff;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 0.95rem;
+}
+.btn-conversa:hover {
+    background-color: #2980b9;
+}
+
+/* Lista de mensagens */
+.lista-mensagens {
+    list-style: none;
+    padding: 0;
+    margin: 1rem 0;
+    max-width: 600px;
+}
+.lista-mensagens li {
+    margin-bottom: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    background-color: #ecf0f1;
+    position: relative;
+}
+.minha-mensagem {
+    background-color: #d1f2eb;
+    margin-left: 20%;
+}
+.mensagem-aluno {
+    background-color: #f8d7da;
+    margin-right: 20%;
+}
+.conteudo-msg strong {
+    display: block;
+    font-size: 0.9rem;
+    color: #2c3e50;
+    margin-bottom: 0.3rem;
+}
+.conteudo-msg p {
+    margin: 0;
+}
+
+/* Link de voltar */
+.back-link {
+    display: inline-block;
+    margin-top: 1rem;
+    color: #7f8c8d;
+    text-decoration: none;
+}
+.back-link:hover {
+    text-decoration: underline;
+}
