@@ -23,10 +23,10 @@ Cypress.Commands.add('cadastroAdministrador', () => {
     cy.get('#id_tipo_usuario');
     cy.get('select[name="tipo_usuario"]').select('Administrador');
     cy.get('#id_username').type('teste administrador');
-    cy.get('#id_email').type('cypress@teste.com');
+    cy.get('#id_email').type('administrador@teste.com');
     cy.get('#id_password1').type('12345');
     cy.get('#id_password2').type('12345');
-    cy.get('.auth-box > form > button').click();
+    cy.get('button').click();
 });
 
 Cypress.Commands.add('loginAdministrador', () => {
@@ -41,7 +41,7 @@ Cypress.Commands.add('cadastroColaborador', () => {
     cy.get('#id_tipo_usuario');
     cy.get('select[name="tipo_usuario"]').select('Colaborador');
     cy.get('#id_username').type('teste colaborador');
-    cy.get('#id_email').type('cypress@teste.com');
+    cy.get('#id_email').type('colaborador@teste.com');
     cy.get('#id_password1').type('12345');
     cy.get('#id_password2').type('12345');
     cy.get('button').click();
@@ -88,13 +88,31 @@ describe('Apadrinhamento como colaborador', () => {
     });
     
     it('Cenario 1: Visualização da lista de apadrinhados disponiveis', () => {
-        cy.cadastroAdministrador();
-        cy.loginAdministrador();
-        cy.cadastroApadrinhado();
-        cy.cadastroApadrinhado2();
-        cy.get(':nth-child(2) > form > button').click();
-        cy.get('p > a').click();
-        cy.cadastroColaborador();
+      cy.cadastroAdministrador();
+      cy.loginAdministrador();
+      cy.cadastroApadrinhado();
+      cy.cadastroApadrinhado2();
+      cy.get(':nth-child(2) > form > button').click();
+      cy.get('p > a').click();
+      cy.cadastroColaborador();
+      cy.loginColaborador();
+      cy.get('nav > [href="/apadrinhar/"]').click();
+      cy.wait(1500);
     });
-
+    
+    it('Cenario 2: Apadrinhamento com sucesso', () => {
+      cy.cadastroAdministrador();
+      cy.loginAdministrador();
+      cy.cadastroApadrinhado();
+      cy.cadastroApadrinhado2();
+      cy.get(':nth-child(2) > form > button').click();
+      cy.get('p > a').click();
+      cy.cadastroColaborador();
+      cy.loginColaborador();
+      cy.get('nav > [href="/apadrinhar/"]').click();
+      cy.get(':nth-child(1) > .btn-sponsor').click();
+      cy.get('.actions > button').click();
+      cy.get('[href="/meus_apadrinhados/"]').click();
+      cy.wait(1500);
+    });
 });

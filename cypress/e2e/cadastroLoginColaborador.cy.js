@@ -14,10 +14,10 @@ Cypress.Commands.add('cadastroColaborador', () => {
     cy.get('#id_tipo_usuario');
     cy.get('select[name="tipo_usuario"]').select('Colaborador');
     cy.get('#id_username').type('teste colaborador');
-    cy.get('#id_email').type('cypress@teste.com');
+    cy.get('#id_email').type('colaborador@teste.com');
     cy.get('#id_password1').type('12345');
     cy.get('#id_password2').type('12345');
-    cy.get('.auth-box > form > button').click();
+    cy.get('button').click();
 });
 
 Cypress.Commands.add('loginColaborador', () => {
