@@ -170,3 +170,20 @@ class Visita(models.Model):
 
     def __str__(self):
         return f"Visita de {self.padrinho.username} a {self.apadrinhado.nome} em {self.data} {self.hora} ({self.status})"
+
+class Doacao(models.Model):
+    TIPO_CHOICES = [
+        ('financeira', 'Financeira'),
+        ('material', 'Material'),
+    ]
+    colaborador = models.ForeignKey(User, on_delete=models.CASCADE)
+    aluno = models.ForeignKey(Aluno, on_delete=models.CASCADE)
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES)
+    valor = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    descricao = models.TextField(blank=True)
+    data = models.DateTimeField(auto_now_add=True)
+    sucesso = models.BooleanField(default=False)
+    mensagem_erro = models.TextField(blank=True)
+
+    def __str__(self):
+        return f"Doação de {self.colaborador} para {self.aluno} - {self.tipo}"

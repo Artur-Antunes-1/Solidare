@@ -6,6 +6,8 @@ from django.contrib import messages
 from django.db import IntegrityError
 from django.db.models import Count, Q
 from django.http import HttpResponseForbidden
+from django import forms
+from .models import Doacao, Aluno
 import json
 
 from .models import (
@@ -705,3 +707,40 @@ def adicionar_progresso_view(request, apadrinhado_id):
 
     # GET: apenas exibe o formulário vazio
     return render(request, 'adicionar_progresso.html', {'apadrinhado': ap})
+
+
+class InlineDoacaoForm(forms.Form):
+    aluno = forms.ModelChoiceField(queryset=Aluno.objects.all())
+    tipo = forms.ChoiceField(choices=Doacao.TIPO_CHOICES)
+    valor = forms.DecimalField(required=False)
+    descricao = forms.CharField(widget=forms.Textarea, required=False)
+
+def realizar_doacao(request):
+    if request.method == 'POST':
+        form = InlineDoacaoForm(request.POST)
+        if form.is_valid():
+            aluno = form.cleaned_data['aluno']
+            tipo = form.cleaned_data['tipo']
+            valor = form.cleaned_data['valor']
+            descricao = form.cleaned_data['descricao']
+            doacao = Doacao(
+                colaborador=request.user,
+                aluno=aluno,
+                tipo=tipo,
+                valor=valor,
+                descricao=descricao
+            )
+            try:
+                if tipo == 'financeira' and (not valor or valor <= 0):
+                    raise ValueError("Valor inválido para doação financeira.")
+                doacao.sucesso = True
+                messages.success(request, "Doação realizada com sucesso!")
+            except Exception as e:
+                doacao.sucesso = False
+                doacao.mensagem_erro = str(e)
+                messages.error(request, f"Erro na doação: {e}")
+            doacao.save()
+            return redirect('painel_contribuicoes')
+    else:
+        form = InlineDoacaoForm()
+    return render(request, 'doacoes/realizar_doacao.html', {'form': form})
