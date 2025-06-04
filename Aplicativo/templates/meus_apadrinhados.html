@@ -37,7 +37,7 @@
         {% endif %}
         <h3>{{ ap.nome }}</h3>
         <div class="button-group">
-          <a href="{% url 'detalhes_aluno' ap.id %}" class="btn-progress">
+          <a href="{% url 'boletim_apadrinhado' ap.id %}" class="btn-progress">
             Ver Progresso
           </a>
           <a href="{% url 'agendar_visita' ap.id %}" class="btn-agendar">

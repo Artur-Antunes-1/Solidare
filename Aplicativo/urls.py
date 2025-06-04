@@ -24,6 +24,9 @@ urlpatterns = [
     path('indicar/', views.indicar_aluno, name='indicar_aluno'),
     path('contratar/', views.registrar_contratacao, name='registrar_contratacao'),
     path('sucesso/', lambda request: render(request, 'sucesso.html'), name='sucesso_contratacao'),
+    
+    path('adm/apadrinhado/<int:apadrinhado_id>/adicionar-progresso/', views.adicionar_progresso_view, name='adicionar_progresso'),
+    path('boletim/<int:apadrinhado_id>', views.boletim_apadrinhado, name='boletim_apadrinhado'),
 
      # Detalhes do boletim do apadrinhado
     path(

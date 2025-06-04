@@ -327,19 +327,53 @@ def detalhes_aluno(request, apadrinhado_id):
         'desempenho': desempenho,
     })
 
+
+@login_required
+def boletim_apadrinhado(request, apadrinhado_id):
+    apadrinhado = get_object_or_404(Apadrinhado, id=apadrinhado_id)
+
+    if request.user.perfil.tipo_usuario == 'administrador':
+        base = 'homeAdmin.html'
+    else:
+        base = 'home.html'
+
+    # Se já existir lógica de permissão, mantenha aqui antes de buscar desempenho
+    desempenho_list = Desempenho.objects.filter(apadrinhado=apadrinhado).order_by('mes')
+
+    return render(request, 'boletim_apadrinhado.html', {
+        'apadrinhado': apadrinhado,
+        'base_template': base,
+        'desempenho_list': desempenho_list,
+    })
+
 @login_required
 def historico_progresso(request, apadrinhado_id):
     """
     Cenário 2: Relatórios de progresso periódicos - gráficos e estatísticas
+    Somente administradores ou o próprio padrinho do apadrinhado podem acessar.
     """
     apadrinhado = get_object_or_404(Apadrinhado, id=apadrinhado_id)
+
+    if request.user.perfil.tipo_usuario == 'administrador':
+        base = 'homeAdmin.html'
+    else:
+        base = 'home.html'
+
+    # 1) Verifica permissão: se não for admin nem padrinho, nega.
+    perfil = getattr(request.user, 'perfil', None)
+    if not perfil:
+        return HttpResponseForbidden("Perfil não encontrado.")
+
+    if perfil.tipo_usuario != 'administrador' and apadrinhado.apadrinhado_por != request.user:
+        return HttpResponseForbidden("Você não tem permissão para visualizar este histórico.")
+
+    # 2) Busca os registros de Desempenho
     desempenho = Desempenho.objects.filter(apadrinhado=apadrinhado).order_by('mes')
 
     meses = [d.mes for d in desempenho]
     notas = [float(d.nota) for d in desempenho]
     frequencias = [float(d.frequencia) for d in desempenho]
 
-    # Serializa cada lista em string JSON
     meses_json = json.dumps(meses)
     notas_json = json.dumps(notas)
     frequencias_json = json.dumps(frequencias)
@@ -349,6 +383,7 @@ def historico_progresso(request, apadrinhado_id):
         'meses_json': meses_json,
         'notas_json': notas_json,
         'frequencias_json': frequencias_json,
+        'base_template': base,
     }
     return render(request, 'historico_progresso.html', context)
 
@@ -359,6 +394,12 @@ def progresso_filtrado(request, apadrinhado_id):
     Parâmetro 'filtro' pode ser: 'nota', 'frequencia' ou 'comentario'.
     """
     apadrinhado = get_object_or_404(Apadrinhado, id=apadrinhado_id)
+    
+    if request.user.perfil.tipo_usuario == 'administrador':
+        base = 'homeAdmin.html'
+    else:
+        base = 'home.html'
+
     filtro = request.GET.get('filtro', 'nota')  # valor padrão: nota
 
     desempenho = Desempenho.objects.filter(apadrinhado=apadrinhado).order_by('mes')
@@ -376,6 +417,7 @@ def progresso_filtrado(request, apadrinhado_id):
         'apadrinhado': apadrinhado,
         'dados': dados,
         'filtro': filtro,
+        'base_template': base,
     })
 
 @login_required
@@ -523,3 +565,53 @@ def recusar_visita_view(request, visita_id):
     visita.save()
     messages.success(request, f"Visita de {visita.padrinho.username} a {visita.apadrinhado.nome} recusada.")
     return redirect('visitas_pendentes')
+
+@login_required
+def adicionar_progresso_view(request, apadrinhado_id):
+    # 1) Verifica se é administrador
+    try:
+        if request.user.perfil.tipo_usuario != 'administrador':
+            return HttpResponseForbidden("Acesso restrito: somente administradores podem adicionar progresso.")
+    except Perfil.DoesNotExist:
+        return HttpResponseForbidden("Perfil não encontrado.")
+
+    # 2) Busca o objeto Apadrinhado ou 404
+    ap = get_object_or_404(Apadrinhado, id=apadrinhado_id)
+
+    if request.method == 'POST':
+        mes = request.POST.get('mes', '').strip()
+        nota = request.POST.get('nota', '').strip()
+        frequencia = request.POST.get('frequencia', '').strip()
+        comentario = request.POST.get('comentario', '').strip()
+
+        erros = []
+        if not mes:
+            erros.append("Campo 'Mês' é obrigatório.")
+        if not nota:
+            erros.append("Campo 'Nota' é obrigatório.")
+        if not frequencia:
+            erros.append("Campo 'Frequência' é obrigatório.")
+
+        # Se houver erros, exibe no template
+        if erros:
+            for e in erros:
+                messages.error(request, e)
+            return render(request, 'adicionar_progresso.html', {'apadrinhado': ap})
+
+        # Cria o Desempenho
+        try:
+            Desempenho.objects.create(
+                apadrinhado=ap,
+                mes=mes,
+                nota=nota,
+                frequencia=frequencia,
+                comentario_professor=comentario
+            )
+            messages.success(request, f"Progresso de '{ap.nome}' registrado para {mes}.")
+            return redirect('historico_progresso', apadrinhado_id=ap.id)
+        except Exception:
+            messages.error(request, "Falha ao salvar o progresso.")
+            return render(request, 'adicionar_progresso.html', {'apadrinhado': ap})
+
+    # GET: apenas exibe o formulário vazio
+    return render(request, 'adicionar_progresso.html', {'apadrinhado': ap})

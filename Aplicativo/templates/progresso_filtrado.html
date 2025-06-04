@@ -1,48 +1,115 @@
-{# Aplicativo/templates/progresso/progresso_filtrado.html #}
-{% extends "base.html" %}
+{% extends base_template %}
 {% load static %}
-
 {% block title %}Progresso Filtrado – {{ apadrinhado.nome }}{% endblock %}
 
 {% block content %}
-  <h1>Progresso Filtrado – {{ apadrinhado.nome }}</h1>
+<style>
+  .filtrado-container {
+      max-width: 800px;
+      margin: 2rem auto;
+      background-color: #f9f9f9;
+      border-radius: 6px;
+      padding: 1.5rem;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.1);
+  }
+  .filtrado-container h1 {
+      margin-bottom: 1rem;
+      color: #2c3e50;
+  }
+  .form-filtro {
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+  }
+  .form-filtro label {
+      margin-right: 0.5rem;
+      font-weight: 500;
+      color: #34495e;
+  }
+  .form-filtro select {
+      padding: 0.4rem 0.6rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      margin-right: 0.75rem;
+  }
+  .form-filtro button {
+      padding: 0.4rem 0.8rem;
+      background-color: #3498db;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+  }
+  .form-filtro button:hover {
+      background-color: #2980b9;
+  }
+  .filtrado-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 1.5rem;
+  }
+  .filtrado-table thead {
+      background-color: #2c3e50;
+      color: #fff;
+  }
+  .filtrado-table th,
+  .filtrado-table td {
+      padding: 0.7rem 0.9rem;
+      border: 1px solid #ddd;
+      text-align: left;
+  }
+  .filtrado-table tbody tr:nth-child(even) {
+      background-color: #f2f2f2;
+  }
+  .back-link {
+      color: #7f8c8d;
+      text-decoration: none;
+      font-size: 0.95rem;
+  }
+  .back-link:hover {
+      text-decoration: underline;
+  }
+</style>
 
-  <form method="get" style="margin-bottom:1rem;">
-    <label>Filtro:
-      <select name="filtro" onchange="this.form.submit()">
-        <option value="nota" {% if filtro == 'nota' %}selected{% endif %}>Notas</option>
-        <option value="frequencia" {% if filtro == 'frequencia' %}selected{% endif %}>Frequência</option>
-        <option value="comentario" {% if filtro == 'comentario' %}selected{% endif %}>Comentários</option>
-      </select>
-    </label>
+<div class="filtrado-container">
+  <h1>Progresso Filtrado – {{ apadrinhado.nome }}</h1>
+  <form method="get">
+    <label for="filtro">Filtro:</label>
+    <select name="filtro" id="filtro">
+      <option value="nota" {% if filtro == 'nota' %}selected{% endif %}>Notas</option>
+      <option value="frequencia" {% if filtro == 'frequencia' %}selected{% endif %}>Frequências</option>
+      <option value="comentario" {% if filtro == 'comentario' %}selected{% endif %}>Comentários</option>
+    </select>
+    <button type="submit">Aplicar</button>
   </form>
 
-  <table class="table table-bordered" style="max-width: 800px;">
-    <thead>
-      <tr>
-        <th>Mês</th>
-        {% if filtro == 'comentario' %}
-          <th>Comentário do Professor</th>
-        {% else %}
-          <th>Valor</th>
-        {% endif %}
-      </tr>
-    </thead>
-    <tbody>
-      {% for mes, valor in dados %}
+  {% if dados %}
+    <table>
+      <thead>
         <tr>
-          <td>{{ mes }}</td>
-          <td>{{ valor }}</td>
+          <th>Mês</th>
+          <th>
+            {% if filtro == 'comentario' %}
+              Comentário
+            {% elif filtro == 'frequencia' %}
+              Frequência (%)
+            {% else %}
+              Nota
+            {% endif %}
+          </th>
         </tr>
-      {% empty %}
-        <tr>
-          <td colspan="2">Nenhum dado encontrado.</td>
-        </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-
-  <p style="margin-top:1rem;">
-    <a href="{% url 'detalhes_aluno' apadrinhado.id %}">← Voltar ao boletim</a>
-  </p>
+      </thead>
+      <tbody>
+        {% for mes, valor in dados %}
+          <tr>
+            <td>{{ mes }}</td>
+            <td>{{ valor }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p>Não há dados para exibir.</p>
+  {% endif %}
+  <a href="{% url 'boletim_apadrinhado' apadrinhado.id %}">← Voltar ao boletim</a>
 {% endblock %}

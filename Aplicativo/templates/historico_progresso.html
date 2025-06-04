@@ -1,64 +1,162 @@
-{# Aplicativo/templates/progresso/historico_progresso.html #}
-{% extends "base.html" %}
+{% extends base_template %}
 {% load static %}
-
 {% block title %}Gráficos de Progresso – {{ apadrinhado.nome }}{% endblock %}
 
 {% block content %}
+<style>
+  .grafico-container {
+      max-width: 900px;
+      margin: 2rem auto;
+      background-color: #f9f9f9;
+      border-radius: 6px;
+      padding: 1.5rem;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.1);
+  }
+  .grafico-container h1 {
+      margin-bottom: 1rem;
+      color: #2c3e50;
+  }
+  .charts-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2rem;
+      margin-bottom: 1.5rem;
+  }
+  .chart-box {
+      flex: 1 1 400px;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 1rem;
+  }
+  #chartNotas, #chartFrequencia {
+      width: 100% !important;
+      height: 300px !important;
+  }
+  .back-link {
+      color: #7f8c8d;
+      text-decoration: none;
+      font-size: 0.95rem;
+  }
+  .back-link:hover {
+      text-decoration: underline;
+  }
+</style>
+
+<div class="grafico-container">
   <h1>Gráficos de Progresso – {{ apadrinhado.nome }}</h1>
 
-  <canvas id="graficoNotas" width="600" height="300"></canvas>
-  <canvas id="graficoFrequencia" width="600" height="300" style="margin-top: 30px;"></canvas>
+  {% if desempenho_list %}
+    <div class="charts-row">
+      <div class="chart-box">
+        <h3>Notas ao Longo dos Meses</h3>
+        <canvas id="chartNotas"></canvas>
+      </div>
+      <div class="chart-box">
+        <h3>Frequência (%) ao Longo dos Meses</h3>
+        <canvas id="chartFrequencia"></canvas>
+      </div>
+    </div>
+  {% else %}
+    <p>Não há dados de desempenho para gerar gráficos.</p>
+  {% endif %}
 
-  <p style="margin-top: 1rem;">
-    <a href="{% url 'detalhes_aluno' apadrinhado.id %}" class="btn btn-secondary">
-      ← Voltar ao boletim
-    </a>
-  </p>
+  <a class="back-link" href="{% url 'boletim_apadrinhado' apadrinhado.id %}">← Voltar ao boletim</a>
+</div>
 
-  {# Aqui já recebemos da view as strings JSON: meses_json, notas_json, frequencias_json #}
-  <script>
-    // Converte as strings passadas no contexto em arrays JS
-    const meses = JSON.parse('{{ meses_json|escapejs }}');
-    const notas = JSON.parse('{{ notas_json|escapejs }}');
-    const frequencias = JSON.parse('{{ frequencias_json|escapejs }}');
+<!-- Incluir a biblioteca Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  {% comment %}
+    O filtro |escapejs evita que as aspas do JSON quebre o JS.
+    Aqui pegamos os dados que a view passou no contexto.
+  {% endcomment %}
 
-    // Desenha o gráfico de Notas
-    const ctxNotas = document.getElementById('graficoNotas').getContext('2d');
+  const meses = JSON.parse('{{ meses_json|escapejs }}');
+  const notas = JSON.parse('{{ notas_json|escapejs }}');
+  const frequencias = JSON.parse('{{ frequencias_json|escapejs }}');
+
+  // Se não houver dados, não tente desenhar o gráfico
+  if (meses.length > 0) {
+    // GRAFICO DE NOTAS
+    const ctxNotas = document.getElementById('chartNotas').getContext('2d');
     new Chart(ctxNotas, {
       type: 'line',
       data: {
         labels: meses,
         datasets: [{
-          label: 'Notas',
+          label: 'Nota',
           data: notas,
-          borderColor: 'blue',
-          fill: false,
-          tension: 0.1
+          borderColor: '#e74c3c',
+          backgroundColor: 'rgba(231, 76, 60, 0.2)',
+          fill: true,
+          tension: 0.3,
+          pointRadius: 4,
+          pointBackgroundColor: '#c0392b'
         }]
       },
       options: {
-        scales: { y: { min: 0, max: 10 } }
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'Valor da Nota'
+            }
+          },
+          x: {
+            title: {
+              display: true,
+              text: 'Meses'
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            display: false
+          }
+        }
       }
     });
 
-    // Desenha o gráfico de Frequência
-    const ctxFreq = document.getElementById('graficoFrequencia').getContext('2d');
+    // GRAFICO DE FREQUÊNCIAS
+    const ctxFreq = document.getElementById('chartFrequencia').getContext('2d');
     new Chart(ctxFreq, {
-      type: 'line',
+      type: 'bar',
       data: {
         labels: meses,
         datasets: [{
           label: 'Frequência (%)',
           data: frequencias,
-          borderColor: 'green',
-          fill: false,
-          tension: 0.1
+          backgroundColor: '#3498db',
+          borderColor: '#2980b9',
+          borderWidth: 1
         }]
       },
       options: {
-        scales: { y: { min: 0, max: 100 } }
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'Frequência (%)'
+            },
+            max: 100
+          },
+          x: {
+            title: {
+              display: true,
+              text: 'Meses'
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            display: false
+          }
+        }
       }
     });
-  </script>
+  }
+</script>
 {% endblock %}

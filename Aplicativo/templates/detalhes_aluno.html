@@ -1,46 +1,34 @@
 {% extends base_template %}
 {% load static %}
-
 {% block title %}Boletim – {{ apadrinhado.nome }}{% endblock %}
 
 {% block content %}
   <h1>Boletim do apadrinhado: {{ apadrinhado.nome }}</h1>
-
-  <table class="table table-bordered" style="max-width: 800px; margin-bottom: 1rem;">
-    <thead>
-      <tr>
-        <th>Mês</th>
-        <th>Nota</th>
-        <th>Frequência (%)</th>
-        <th>Comentário do Professor</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for d in desempenho %}
+  {% if desempenho %}
+    <table>
+      <thead>
         <tr>
-          <td>{{ d.mes }}</td>
-          <td>{{ d.nota }}</td>
-          <td>{{ d.frequencia }}</td>
-          <td>{{ d.comentario_professor }}</td>
+          <th>Mês</th>
+          <th>Nota</th>
+          <th>Frequência (%)</th>
+          <th>Comentário</th>
         </tr>
-      {% empty %}
-        <tr>
-          <td colspan="4">Nenhum registro de desempenho encontrado.</td>
-        </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-
-  <div style="margin-bottom: 1.5rem;">
-    <a class="btn btn-primary" href="{% url 'historico_progresso' apadrinhado.id %}">
-      Ver gráficos de progresso
-    </a>
-    <a class="btn btn-secondary" href="{% url 'progresso_filtrado' apadrinhado.id %}" style="margin-left: 0.5rem;">
-      Relatórios personalizados
-    </a>
-  </div>
-
-  <p>
-    <a href="{% url 'meus_apadrinhados' %}">← Voltar aos meus apadrinhados</a>
-  </p>
+      </thead>
+      <tbody>
+        {% for d in desempenho %}
+          <tr>
+            <td>{{ d.mes }}</td>
+            <td>{{ d.nota|stringformat:"0.2f" }}</td>
+            <td>{{ d.frequencia|stringformat:"0.2f" }}</td>
+            <td>{{ d.comentario_professor|default:"—" }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p>Não há registros de desempenho.</p>
+  {% endif %}
+  <a href="{% url 'historico_progresso' apadrinhado.id %}">Ver gráficos de progresso</a> |
+  <a href="{% url 'progresso_filtrado' apadrinhado.id %}?filtro=nota">Relatórios personalizados</a> |
+  <a href="{% url 'lista_apadrinhados' %}">← Voltar</a>
 {% endblock %}
