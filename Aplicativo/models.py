@@ -46,15 +46,6 @@ class Aluno(models.Model):
     def __str__(self):
         return self.nome
 
-class Doacao(models.Model):
-    TIPO_CHOICES = [('Financeira', 'Financeira'), ('Material', 'Material')]
-    tipo = models.CharField(max_length=10, choices=TIPO_CHOICES)
-    valor = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    descricao = models.CharField(max_length=255, blank=True)
-    comprovante = models.FileField(upload_to='comprovantes/', null=True, blank=True)
-    usuario = models.ForeignKey(User, on_delete=models.CASCADE)
-    data = models.DateTimeField(auto_now_add=True)
-
 class Boletim(models.Model):
     aluno = models.ForeignKey(Aluno, on_delete=models.CASCADE)
     materia = models.CharField(max_length=50)
@@ -177,7 +168,7 @@ class Doacao(models.Model):
         ('material', 'Material'),
     ]
     colaborador = models.ForeignKey(User, on_delete=models.CASCADE)
-    aluno = models.ForeignKey(Aluno, on_delete=models.CASCADE)
+    aluno = models.ForeignKey(Aluno, on_delete=models.CASCADE, null=True, blank=True)
     tipo = models.CharField(max_length=20, choices=TIPO_CHOICES)
     valor = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     descricao = models.TextField(blank=True)
