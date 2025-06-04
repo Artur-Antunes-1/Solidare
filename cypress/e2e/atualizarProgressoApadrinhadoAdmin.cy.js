@@ -17,6 +17,7 @@ Cypress.Commands.add('deleteApadrinhados', () => {
     });
   });
 
+
 Cypress.Commands.add('cadastroAdministrador', () => {
     cy.visit('/');
     cy.get('[href="/registrar/"]').click();
@@ -48,10 +49,11 @@ Cypress.Commands.add('cadastroColaborador', () => {
 });
 
 Cypress.Commands.add('loginColaborador', () => {
-  cy.get('#username').type('teste colaborador');
-  cy.get('#password').type('12345');
-  cy.get('.auth-box > form > button').click();
+    cy.get('#username').type('teste colaborador');
+    cy.get('#password').type('12345');
+    cy.get('.auth-box > form > button').click();
 });
+
 
 Cypress.Commands.add('cadastroApadrinhado', () => {
     cy.get('nav > [href="/registrar/apadrinhado/"]').click();
@@ -60,17 +62,24 @@ Cypress.Commands.add('cadastroApadrinhado', () => {
     cy.get('#genero');
     cy.get('select[name="genero"]').select('Masculino');
     cy.get('.alinhar > button').click();
-    
 });
 
-Cypress.Commands.add('cadastroApadrinhado2', () => {
-    cy.get('nav > [href="/registrar/apadrinhado/"]').click();
-    cy.get('#nome').type('Maria');
-    cy.get('#idade').type('06');
-    cy.get('#genero');
-    cy.get('select[name="genero"]').select('Feminino');
-    cy.get('.alinhar > button').click();
-    
+Cypress.Commands.add('adicionarProgresso', () => {
+    cy.get('a[href^="/adm/apadrinhado/"][href$="/adicionar-progresso/"]').click();
+    cy.get('#mes').type('Janeiro');
+    cy.get('#nota').type('10');
+    cy.get('#frequencia').type('86%');
+    cy.get('#comentario').type('Aluno foi muito bem esse mês.');
+    cy.get('main > form > button').click();
+});
+
+
+Cypress.Commands.add('adicionarProgressoIncompleto', () => {
+    cy.get('a[href^="/adm/apadrinhado/"][href$="/adicionar-progresso/"]').click();
+    cy.get('#mes').type('Janeiro');
+    cy.get('#nota').type('10');
+    cy.get('#comentario').type('Aluno foi muito bem esse mês.');
+    cy.get('main > form > button').click();
 });
 
 Cypress.Commands.add('Apadrinhar', () => {
@@ -81,7 +90,7 @@ Cypress.Commands.add('Apadrinhar', () => {
 });
 
 
-describe('Apadrinhamento como colaborador', () => {
+describe('atualizar progresso de apadrinhado como administrador', () => {
 
 
     beforeEach(() => {
@@ -91,32 +100,22 @@ describe('Apadrinhamento como colaborador', () => {
               cy.clearCookies();
               cy.clearLocalStorage();
               cy.visit('/');
-        });
+    });
     });
     
-    it('Cenario 1: Visualização da lista de apadrinhados disponiveis', () => {
+    it('Cenario 1: adicionar o progresso com sucesso ', () => {
       cy.cadastroAdministrador();
       cy.loginAdministrador();
       cy.cadastroApadrinhado();
-      cy.cadastroApadrinhado2();
-      cy.get(':nth-child(2) > form > button').click();
-      cy.get('p > a').click();
-      cy.cadastroColaborador();
-      cy.loginColaborador();
-      cy.get('nav > [href="/apadrinhar/"]').click();
+      cy.adicionarProgresso();
       cy.wait(1500);
     });
-    
-    it('Cenario 2: Apadrinhamento com sucesso', () => {
+
+    it('Cenario 2: tentar adicionar sem preencher algum campo', () => {
       cy.cadastroAdministrador();
       cy.loginAdministrador();
       cy.cadastroApadrinhado();
-      cy.cadastroApadrinhado2();
-      cy.get(':nth-child(2) > form > button').click();
-      cy.get('p > a').click();
-      cy.cadastroColaborador();
-      cy.loginColaborador();
-      cy.Apadrinhar();
+      cy.adicionarProgressoIncompleto();
       cy.wait(1500);
     });
 });

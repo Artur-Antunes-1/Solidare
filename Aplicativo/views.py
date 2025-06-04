@@ -700,7 +700,7 @@ def adicionar_progresso_view(request, apadrinhado_id):
                 comentario_professor=comentario
             )
             messages.success(request, f"Progresso de '{ap.nome}' registrado para {mes}.")
-            return redirect('historico_progresso', apadrinhado_id=ap.id)
+            return redirect('boletim_apadrinhado', apadrinhado_id=ap.id)
         except Exception:
             messages.error(request, "Falha ao salvar o progresso.")
             return render(request, 'adicionar_progresso.html', {'apadrinhado': ap})

@@ -1,3 +1,4 @@
+
 Cypress.Commands.add('deleteUsers', () => {
     return cy.exec('python delete_users.py', { failOnNonZeroExit: false }).then((result) => {
       console.log(result.stdout); 
@@ -16,6 +17,7 @@ Cypress.Commands.add('deleteApadrinhados', () => {
       }
     });
   });
+
 
 Cypress.Commands.add('cadastroAdministrador', () => {
     cy.visit('/');
@@ -48,10 +50,11 @@ Cypress.Commands.add('cadastroColaborador', () => {
 });
 
 Cypress.Commands.add('loginColaborador', () => {
-  cy.get('#username').type('teste colaborador');
-  cy.get('#password').type('12345');
-  cy.get('.auth-box > form > button').click();
+    cy.get('#username').type('teste colaborador');
+    cy.get('#password').type('12345');
+    cy.get('.auth-box > form > button').click();
 });
+
 
 Cypress.Commands.add('cadastroApadrinhado', () => {
     cy.get('nav > [href="/registrar/apadrinhado/"]').click();
@@ -60,18 +63,35 @@ Cypress.Commands.add('cadastroApadrinhado', () => {
     cy.get('#genero');
     cy.get('select[name="genero"]').select('Masculino');
     cy.get('.alinhar > button').click();
-    
 });
 
-Cypress.Commands.add('cadastroApadrinhado2', () => {
-    cy.get('nav > [href="/registrar/apadrinhado/"]').click();
-    cy.get('#nome').type('Maria');
-    cy.get('#idade').type('06');
-    cy.get('#genero');
-    cy.get('select[name="genero"]').select('Feminino');
-    cy.get('.alinhar > button').click();
-    
+Cypress.Commands.add('adicionarProgresso', () => {
+    cy.get('a[href^="/adm/apadrinhado/"][href$="/adicionar-progresso/"]').click();
+    cy.get('#mes').type('Janeiro');
+    cy.get('#nota').type('10');
+    cy.get('#frequencia').type('86%');
+    cy.get('#comentario').type('Aluno foi muito bem esse mês.');
+    cy.get('main > form > button').click();
 });
+
+
+Cypress.Commands.add('adicionarProgresso2', () => {
+    cy.get('a[href^="/adm/apadrinhado/"][href$="/adicionar-progresso/"]').click();
+    cy.get('#mes').type('Março');
+    cy.get('#nota').type('9.4');
+    cy.get('#frequencia').type('78%');
+    cy.get('#comentario').type('Aluno foi muito bem esse mês ,mas em relação a janeiro ela foi inferior.');
+    cy.get('main > form > button').click();
+});
+
+Cypress.Commands.add('visualizarPersonalizado' , () => {
+    cy.get('a[href^="/aluno/"][href$="filtro/?filtro=nota"]').click();
+    cy.get('#filtro');
+    cy.get('select[name="filtro"]').select('Frequências');
+    cy.get('.filtrado-container > form > button').click();
+
+});
+
 
 Cypress.Commands.add('Apadrinhar', () => {
     cy.get('nav > [href="/apadrinhar/"]').click();
@@ -81,7 +101,7 @@ Cypress.Commands.add('Apadrinhar', () => {
 });
 
 
-describe('Apadrinhamento como colaborador', () => {
+describe('visualizar progresso de apadrinhados como colaborador', () => {
 
 
     beforeEach(() => {
@@ -91,32 +111,35 @@ describe('Apadrinhamento como colaborador', () => {
               cy.clearCookies();
               cy.clearLocalStorage();
               cy.visit('/');
-        });
     });
-    
-    it('Cenario 1: Visualização da lista de apadrinhados disponiveis', () => {
-      cy.cadastroAdministrador();
-      cy.loginAdministrador();
-      cy.cadastroApadrinhado();
-      cy.cadastroApadrinhado2();
-      cy.get(':nth-child(2) > form > button').click();
-      cy.get('p > a').click();
-      cy.cadastroColaborador();
-      cy.loginColaborador();
-      cy.get('nav > [href="/apadrinhar/"]').click();
-      cy.wait(1500);
     });
-    
-    it('Cenario 2: Apadrinhamento com sucesso', () => {
-      cy.cadastroAdministrador();
-      cy.loginAdministrador();
-      cy.cadastroApadrinhado();
-      cy.cadastroApadrinhado2();
-      cy.get(':nth-child(2) > form > button').click();
-      cy.get('p > a').click();
-      cy.cadastroColaborador();
-      cy.loginColaborador();
-      cy.Apadrinhar();
-      cy.wait(1500);
+    it('Cenario 1: visualização bem sucedida do desempenho do aluno ', () => {
+        cy.cadastroAdministrador();
+        cy.loginAdministrador();
+        cy.cadastroApadrinhado();
+        cy.adicionarProgresso();
+        cy.get('button').click();
+        cy.get('p > a').click();
+        cy.cadastroColaborador();
+        cy.loginColaborador();
+        cy.Apadrinhar();
+        cy.get('.btn-progress').click();
+        cy.wait(1500);
+    });
+    it('Cenario 2 : visualização com filtros', () => {
+        cy.cadastroAdministrador();
+        cy.loginAdministrador();
+        cy.cadastroApadrinhado();
+        cy.adicionarProgresso();
+        cy.get('.back-link').click();
+        cy.adicionarProgresso2();
+        cy.get('button').click();
+        cy.get('p > a').click();
+        cy.cadastroColaborador();
+        cy.loginColaborador();
+        cy.Apadrinhar();
+        cy.get('.btn-progress').click();
+        cy.visualizarPersonalizado();
+        cy.wait(1500);
     });
 });
