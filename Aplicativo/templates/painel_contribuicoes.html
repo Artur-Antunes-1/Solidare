@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <div class="container">
+    <h2>Painel de Contribuições</h2>
+
+    {% if doacoes %}
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Aluno</th>
+            <th>Tipo</th>
+            <th>Valor</th>
+            <th>Status</th>
+            <th>Utilização</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for doacao in doacoes %}
+            <tr>
+              <td>{{ doacao.data|date:"d/m/Y H:i" }}</td>
+              <td>{{ doacao.aluno.nome }}</td>
+              <td>{{ doacao.get_tipo_display }}</td>
+              <td>R$ {{ doacao.valor|floatformat:2 }}</td>
+              <td>
+                {% if doacao.sucesso %}
+                  <span class="text-success">✔ Sucesso</span>
+                {% else %}
+                  <span class="text-danger">✖ Falha</span><br>
+                  <small>{{ doacao.mensagem_erro }}</small>
+                {% endif %}
+              </td>
+              <td>{{ doacao.descricao }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p>Você ainda não realizou nenhuma doação.</p>
+    {% endif %}
+  </div>
+{% endblock %}
