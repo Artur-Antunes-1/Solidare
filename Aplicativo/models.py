@@ -168,7 +168,14 @@ class Doacao(models.Model):
         ('material', 'Material'),
     ]
     colaborador = models.ForeignKey(User, on_delete=models.CASCADE)
-    aluno = models.ForeignKey(Aluno, on_delete=models.CASCADE, null=True, blank=True)
+    # agora relaciona diretamente com Apadrinhado
+    apadrinhado = models.ForeignKey(
+        'Apadrinhado',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='doacoes'
+    )
     tipo = models.CharField(max_length=20, choices=TIPO_CHOICES)
     valor = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     descricao = models.TextField(blank=True)
@@ -177,4 +184,4 @@ class Doacao(models.Model):
     mensagem_erro = models.TextField(blank=True)
 
     def __str__(self):
-        return f"Doação de {self.colaborador} para {self.aluno} - {self.tipo}"
+        return f"Doação de {self.colaborador.username} para {self.apadrinhado.nome} - {self.get_tipo_display()}"

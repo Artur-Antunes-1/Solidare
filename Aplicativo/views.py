@@ -6,8 +6,6 @@ from django.contrib import messages
 from django.db import IntegrityError
 from django.db.models import Count, Q
 from django.http import HttpResponseForbidden
-from django import forms
-from .models import Doacao, Aluno
 import json
 
 from .models import (
@@ -249,24 +247,12 @@ def conversa_aluno(request, aluno_id):
         'base_template': base,
     })
 
-
-@login_required
-def doacoes_view(request):
-    return render(request, 'doacoes.html')
-
 @login_required
 def progresso_view(request, aluno_id):
     aluno = Aluno.objects.get(id=aluno_id)
     boletins = Boletim.objects.filter(aluno=aluno)
     comentarios = ComentarioProfessor.objects.filter(aluno=aluno)
     return render(request, 'progresso.html', {'aluno': aluno, 'boletins': boletins, 'comentarios': comentarios})
-
-@login_required
-def impacto_view(request):
-    doacoes = Doacao.objects.filter(usuario=request.user)
-    total = sum(d.valor for d in doacoes if d.valor)
-    alunos = Aluno.objects.filter(apadrinhado_por=request.user).count()
-    return render(request, 'impacto.html', {'total_doado': total, 'num_alunos': alunos})
 
 @login_required
 def banco_talentos_view(request):
@@ -708,39 +694,103 @@ def adicionar_progresso_view(request, apadrinhado_id):
     # GET: apenas exibe o formulário vazio
     return render(request, 'adicionar_progresso.html', {'apadrinhado': ap})
 
-
-class InlineDoacaoForm(forms.Form):
-    aluno = forms.ModelChoiceField(queryset=Aluno.objects.all())
-    tipo = forms.ChoiceField(choices=Doacao.TIPO_CHOICES)
-    valor = forms.DecimalField(required=False)
-    descricao = forms.CharField(widget=forms.Textarea, required=False)
-
+@login_required
 def realizar_doacao(request):
     if request.method == 'POST':
-        form = InlineDoacaoForm(request.POST)
-        if form.is_valid():
-            aluno = form.cleaned_data['aluno']
-            tipo = form.cleaned_data['tipo']
-            valor = form.cleaned_data['valor']
-            descricao = form.cleaned_data['descricao']
-            doacao = Doacao(
-                colaborador=request.user,
-                aluno=aluno,
-                tipo=tipo,
-                valor=valor,
-                descricao=descricao
+        apadrinhado_id = request.POST.get('apadrinhado')
+        tipo = request.POST.get('tipo')
+        valor_raw = request.POST.get('valor')
+        descricao = request.POST.get('descricao', '').strip()
+
+        # Criamos instância vazia (ainda sem apadrinhado atribuído)
+        doacao = Doacao(colaborador=request.user, mensagem_erro='')
+
+        try:
+            # 1) Validar APADRINHADO: precisa pertencer ao usuário logado
+            if not apadrinhado_id:
+                raise ValueError("Selecione um apadrinhado válido.")
+            ap = get_object_or_404(
+                Apadrinhado,
+                pk=apadrinhado_id,
+                apadrinhado_por=request.user
             )
-            try:
-                if tipo == 'financeira' and (not valor or valor <= 0):
+            doacao.apadrinhado = ap
+
+            # 2) Validar tipo
+            if tipo not in dict(Doacao.TIPO_CHOICES).keys():
+                raise ValueError("Tipo de doação inválido.")
+            doacao.tipo = tipo
+
+            # 3) Caso seja financeira, validar valor
+            if tipo == 'financeira':
+                if not valor_raw:
+                    raise ValueError("Informe o valor para a doação financeira.")
+                try:
+                    valor = float(valor_raw.replace(',', '.'))
+                except ValueError:
+                    raise ValueError("Valor deve ser numérico.")
+                if valor <= 0:
                     raise ValueError("Valor inválido para doação financeira.")
-                doacao.sucesso = True
-                messages.success(request, "Doação realizada com sucesso!")
-            except Exception as e:
-                doacao.sucesso = False
-                doacao.mensagem_erro = str(e)
-                messages.error(request, f"Erro na doação: {e}")
+                doacao.valor = valor
+            else:
+                doacao.valor = None
+
+            # 4) Atribuir descrição
+            doacao.descricao = descricao
+
+            # 5) Marcar sucesso e salvar
+            doacao.sucesso = True
             doacao.save()
-            return redirect('painel_contribuicoes')
-    else:
-        form = InlineDoacaoForm()
-    return render(request, 'doacoes/realizar_doacao.html', {'form': form})
+            messages.success(request, "Doação realizada com sucesso!")
+        except Exception as e:
+            # Marcar falha, salvar mensagem de erro e persistir
+            doacao.sucesso = False
+            doacao.mensagem_erro = str(e)
+            doacao.valor = getattr(doacao, 'valor', None)
+            doacao.descricao = descricao
+            doacao.save()
+            messages.error(request, f"Erro na doação: {e}")
+
+        return redirect('painel_contribuicoes')
+
+    # Para GET: carregar somente os APADRINHADOS que você patrocina
+    apadrinhados = Apadrinhado.objects.filter(apadrinhado_por=request.user).order_by('nome')
+    return render(request, 'realizar_doacao.html', {
+        'apadrinhados': apadrinhados,
+        'TIPO_CHOICES': Doacao.TIPO_CHOICES,
+    })
+
+@login_required
+def painel_contribuicoes(request):
+    # Listar apenas as doações feitas pelo usuário
+    doacoes = Doacao.objects.filter(colaborador=request.user).order_by('-data')
+    return render(request, 'painel_contribuicoes.html', {
+        'doacoes': doacoes,
+    })
+
+@login_required
+def impacto_view(request):
+    # soma dos valores de doações financeiras feitas pelo usuário
+    doacoes = Doacao.objects.filter(colaborador=request.user)
+    total = sum(d.valor for d in doacoes if d.valor)
+
+    # conta quantos Apadrinhado têm apadrinhado_por = request.user
+    num_apadrinhados = Apadrinhado.objects.filter(apadrinhado_por=request.user).count()
+
+    return render(request, 'impacto.html', {
+        'total_doado': total,
+        'num_alunos': num_apadrinhados,
+    })
+
+@login_required
+def doacoes_recebidas(request):
+    # Só usuários com perfil.tipo_usuario == 'administrador' podem acessar
+    if not hasattr(request.user, 'perfil') or request.user.perfil.tipo_usuario != 'administrador':
+        return HttpResponseForbidden("Apenas administradores podem ver as doações recebidas.")
+
+    # Busca todas as doações, da mais recente para a mais antiga
+    doacoes = Doacao.objects.all().order_by('-data')
+
+    return render(request, 'doacoes_recebidas.html', {
+        'doacoes': doacoes,
+    })

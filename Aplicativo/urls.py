@@ -12,9 +12,7 @@ urlpatterns = [
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
 
-    path('doacoes/', views.doacoes_view, name='doacoes'),
     path('progresso/<int:aluno_id>/', views.progresso_view, name='progresso'),
-    path('impacto/', views.impacto_view, name='impacto'),
     path('talentos/', views.banco_talentos_view, name='banco_talentos'),
     path('apadrinhar/', views.apadrinhamento_view, name='apadrinhar'),
     path('apadrinhar/<int:apadrinhado_id>/', views.apadrinhar_detalhes, name='apadrinhar_detalhes'),
@@ -47,6 +45,10 @@ urlpatterns = [
     path('adm/visitas-pendentes/', views.visitas_pendentes_view, name='visitas_pendentes'),
     path('adm/aprovar-visita/<int:visita_id>/', views.aprovar_visita_view, name='aprovar_visita'),
     path('adm/recusar-visita/<int:visita_id>/', views.recusar_visita_view, name='recusar_visita'),
+
+    #Doações
     path('doar/', views.realizar_doacao, name='realizar_doacao'),
-    path('painel/', views. realizar_doacao, name='painel_contribuicoes'),
+    path('painel/', views.painel_contribuicoes, name='painel_contribuicoes'),
+    path('impacto/', views.impacto_view, name='impacto'),
+    path('doacoes-recebidas/', views.doacoes_recebidas, name='doacoes_recebidas'),
 ]
