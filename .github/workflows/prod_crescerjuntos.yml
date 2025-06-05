@@ -1,6 +1,6 @@
 name: CI/CD to Azure Web App
 
-# Dispara sempre que alguém der push na branch prod (ou manualmente via UI)
+# Dispara este workflow sempre que alguém der push na branch prod (ou manualmente via UI)
 on:
   push:
     branches: [ prod ]
@@ -9,75 +9,67 @@ on:
 jobs:
   test-and-deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 30
 
     steps:
-      # ---------------------------------------------------------
       # 1) Pega o código
-      # ---------------------------------------------------------
-      - name: 🛎️ Checkout repository
+      - name: Checkout repository
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
-      # ---------------------------------------------------------
-      # 2) Instala Node.js (para Cypress e wait-on)
-      # ---------------------------------------------------------
-      - name: ⚙️ Setup Node.js
+      # 2) Instala Node.js (necessário para Cypress e wait-on)
+      - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '16.x'
 
-      # ---------------------------------------------------------
       # 3) Instala dependências Node (Cypress, wait-on, etc)
-      # ---------------------------------------------------------
-      - name: 📦 Install npm dependencies
-        working-directory: ./
-        run: |
-          npm ci
+      - name: Install npm dependencies
+        run: npm ci
+        working-directory: ./   # assume que o package.json está na raiz
 
-      # ---------------------------------------------------------
       # 4) Instala Python (para rodar Django)
-      # ---------------------------------------------------------
-      - name: 🐍 Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'   # ajuste para a versão usada no projeto
+      - name: Setup Python
+        uses: actions/checkout@v4
 
-      # ---------------------------------------------------------
-      # 5) Cria virtualenv, instala deps Python e faz migrate
-      # ---------------------------------------------------------
-      - name: 🛠️ Install Python dependencies & Migrate
+      - name: Set up Python version
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Create and start virtual environment
         run: |
           python -m venv venv
           source venv/bin/activate
-          pip install --upgrade pip
+      
+      - name: Install dependencies
+        run: |
           pip install -r requirements.txt
-          python manage.py migrate --noinput
+          npm ci
 
-      # ---------------------------------------------------------
+
+      - name: Run local server and tests
+        run: |
+          python manage.py migrate
+          python manage.py runserver &
+          sleep 5
+          npx cypress run
+
+      
+      - name: Cleaning testing files
+        run: |
+          rm .env
+          rm cypress.config.js
+          rm package-lock.json
+          rm package.json
+          rm -rf cypress  
+        
       # 6) Inicia o servidor Django em background
-      # ---------------------------------------------------------
-      - name: 🚀 Start Django server in background
+      - name: Start Django server in background
         run: |
           source venv/bin/activate
           nohup python manage.py runserver 0.0.0.0:8000 &
-
-      # ---------------------------------------------------------
-      # 7) Aguardar Django ficar “up”
-      # ---------------------------------------------------------
-      - name: ⏳ Wait for Django to be ready
-        run: |
-          npx wait-on http://localhost:8000
-
-      # ---------------------------------------------------------
-      # 8) Rodar testes do Cypress (headless)
-      # ---------------------------------------------------------
-      - name: 🧪 Run Cypress tests
-        run: |
-          npx cypress run --headless
-        env:
-          CYPRESS_baseUrl: http://localhost:8000
 
       # ---------------------------------------------------------
       # 9) Gera o ZIP de deploy (apenas o código relevante)
@@ -125,3 +117,4 @@ jobs:
       - name: 🚨 Notify on failure
         if: ${{ failure() }}
         run: echo "Algum passo falhou! O deploy NÃO foi executado."
+
