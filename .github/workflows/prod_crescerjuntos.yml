@@ -1,6 +1,6 @@
 name: CI/CD to Azure Web App
 
-# Dispara este workflow sempre que alguém der push na branch prod (ou manualmente via UI)
+# Dispara sempre que alguém der push na branch prod (ou manualmente via UI)
 on:
   push:
     branches: [ prod ]
@@ -9,85 +9,119 @@ on:
 jobs:
   test-and-deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
 
     steps:
+      # ---------------------------------------------------------
       # 1) Pega o código
-      - name: Checkout repository
+      # ---------------------------------------------------------
+      - name: 🛎️ Checkout repository
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
-      # 2) Instala Node.js (necessário para Cypress e wait-on)
-      - name: Setup Node.js
+      # ---------------------------------------------------------
+      # 2) Instala Node.js (para Cypress e wait-on)
+      # ---------------------------------------------------------
+      - name: ⚙️ Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '16.x'
 
+      # ---------------------------------------------------------
       # 3) Instala dependências Node (Cypress, wait-on, etc)
-      - name: Install npm dependencies
-        run: npm ci
-        working-directory: ./   # assume que o package.json está na raiz
+      # ---------------------------------------------------------
+      - name: 📦 Install npm dependencies
+        working-directory: ./
+        run: |
+          npm ci
 
+      # ---------------------------------------------------------
       # 4) Instala Python (para rodar Django)
-      - name: Setup Python
-        uses: actions/checkout@v4
-
-      - name: Set up Python version
-        uses: actions/setup-python@v5
+      # ---------------------------------------------------------
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v4
         with:
-          python-version: '3.13'
+          python-version: '3.10'   # ajuste para a versão usada no projeto
 
-      - name: Create and start virtual environment
+      # ---------------------------------------------------------
+      # 5) Cria virtualenv, instala deps Python e faz migrate
+      # ---------------------------------------------------------
+      - name: 🛠️ Install Python dependencies & Migrate
         run: |
           python -m venv venv
           source venv/bin/activate
-      
-      - name: Install dependencies
-        run: |
+          pip install --upgrade pip
           pip install -r requirements.txt
-          npm ci
+          python manage.py migrate --noinput
 
-
-      - name: Run local server and tests
-        run: |
-          python manage.py migrate
-          python manage.py runserver &
-          sleep 5
-          npx cypress run
-
-      
-      - name: Cleaning testing files
-        run: |
-          rm .env
-          rm cypress.config.js
-          rm package-lock.json
-          rm package.json
-          rm -rf cypress  
-        
+      # ---------------------------------------------------------
       # 6) Inicia o servidor Django em background
-      - name: Start Django server in background
+      # ---------------------------------------------------------
+      - name: 🚀 Start Django server in background
         run: |
           source venv/bin/activate
           nohup python manage.py runserver 0.0.0.0:8000 &
 
-      # 9) Se os testes passarem, faz login no Azure
-      - name: Azure Login
+      # ---------------------------------------------------------
+      # 7) Aguardar Django ficar “up”
+      # ---------------------------------------------------------
+      - name: ⏳ Wait for Django to be ready
+        run: |
+          npx wait-on http://localhost:8000
+
+      # ---------------------------------------------------------
+      # 8) Rodar testes do Cypress (headless)
+      # ---------------------------------------------------------
+      - name: 🧪 Run Cypress tests
+        run: |
+          npx cypress run --headless
+        env:
+          CYPRESS_baseUrl: http://localhost:8000
+
+      # ---------------------------------------------------------
+      # 9) Gera o ZIP de deploy (apenas o código relevante)
+      # ---------------------------------------------------------
+      - name: 📦 Prepare ZIP for deploy
+        run: |
+          # Gerar ZIP excluindo pastas que não devem ir ao App Service
+          zip -r deploy.zip . \
+            -x "venv/*" \
+            -x ".git/*" \
+            -x "cypress/*" \
+            -x ".github/*" \
+            -x "*.env" \
+            -x "media/fotos_perfil/*" \
+            -x "__pycache__/*"
+          ls -lh deploy.zip
+
+      # ---------------------------------------------------------
+      # 10) Login no Azure (via Service Principal)
+      # ---------------------------------------------------------
+      - name: 🔐 Azure Login
         if: ${{ success() }}
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      # 10) Faz o deploy para o Web App
-      - name: Deploy to Web App
+      # ---------------------------------------------------------
+      # 11) Deploy ao App Service (ZIP Deploy com Azure CLI)
+      # ---------------------------------------------------------
+      - name: 🚢 Deploy to Azure Web App (zip deploy)
         if: ${{ success() }}
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: 'crescer-juntos'       # substitua pelo nome do seu Web App
-          slot-name: 'Production'
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+        env:
+          AZURE_RESOURCE_GROUP: crescer-juntos_group   # ajuste conforme seu Resource Group
+          AZURE_APP_NAME: crescer-juntos                # ajuste conforme nome exato do App Service
+        run: |
+          echo "Deploying deploy.zip to Web App '$AZURE_APP_NAME' in Resource Group '$AZURE_RESOURCE_GROUP'..."
+          az webapp deployment source config-zip \
+            --resource-group $AZURE_RESOURCE_GROUP \
+            --name $AZURE_APP_NAME \
+            --src deploy.zip
 
-      # 11) (Opcional) Notificar em caso de falha nos testes
-      - name: Notify on failure
+      # ---------------------------------------------------------
+      # 12) Notificar caso algo falhe
+      # ---------------------------------------------------------
+      - name: 🚨 Notify on failure
         if: ${{ failure() }}
-        run: echo "🚨 Algum teste falhou! O deploy NÃO será efetuado."
+        run: echo "Algum passo falhou! O deploy NÃO foi executado."
