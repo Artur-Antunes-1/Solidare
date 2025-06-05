@@ -1,25 +1,74 @@
 name: CI/CD to Azure Web App
 
+# Dispara este workflow sempre que alguém der push na branch prod (ou manualmente via UI)
 on:
   push:
     branches: [ prod ]
   workflow_dispatch:
 
 jobs:
-  deploy:
+  test-and-deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
-      - uses: actions/checkout@v3
+      # 1) Pega o código
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0   # para garantir que temos todo o histórico de git (útil para cypress e git commands, se houver)
 
+      # 2) Instala Node.js (necessário para rodar Cypress)
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16.x'  # você pode usar 14.x, 16.x ou 18.x conforme sua versão do Cypress
+
+      # 3) Instala dependências Node (Cypress e demais libs JS)
+      - name: Install npm dependencies
+        run: npm ci
+        working-directory: ./   # assume o package.json na raiz do repositório
+
+      # 4) Roda os testes do Cypress (headless)
+      - name: Run Cypress tests
+        run: npx cypress run --headless
+        env:
+          CYPRESS_baseUrl: http://localhost:8000
+        # Se precisar subir o servidor Django antes de rodar cypress, descomentar o bloco abaixo:
+        #  - name: Start Django server
+        #    run: |
+        #      python -m venv venv
+        #      source venv/bin/activate
+        #      pip install -r requirements.txt
+        #      python manage.py migrate --noinput
+        #      python manage.py runserver 0.0.0.0:8000 &
+        #    # Garanta que o servidor esteja 100% up (aguarde alguns segundos)
+        #  - name: Wait for Django to be ready
+        #    run: |
+        #      npx wait-on http://localhost:8000
+        #    # Agora que o Django está rodando, executamos o Cypress
+        #  - name: Run Cypress tests
+        #    run: npx cypress run --headless
+        #    env:
+        #      CYPRESS_baseUrl: http://localhost:8000
+
+      # 5) Se todos os testes passarem, faz login no Azure
       - name: Azure Login
+        if: ${{ success() }}
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      # 6) Faz o deploy para o Web App
       - name: Deploy to Web App
+        if: ${{ success() }}
         uses: azure/webapps-deploy@v3
         with:
-          app-name: solidare-webapp
-          slot-name: Production
+          app-name: crescer-juntos        
+          slot-name: Production            # ou o slot que estiver usando
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+
+      # 7) (Opcional) Notificar em caso de falha nos testes
+      - name: Notify on failure
+        if: ${{ failure() }}
+        run: echo "🚨 Algum teste falhou! O deploy NÃO será efetuado."
