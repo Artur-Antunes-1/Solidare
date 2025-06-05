@@ -112,7 +112,7 @@ jobs:
             --src deploy.zip
 
       # ---------------------------------------------------------
-      # 12) Notificar caso algo falhe
+      # 12) Notificar caso algo falhe.
       # ---------------------------------------------------------
       - name: 🚨 Notify on failure
         if: ${{ failure() }}
