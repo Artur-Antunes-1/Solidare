@@ -1,0 +1,36 @@
+{% extends 'baseAdmin.html' %}
+{% load static %}
+{% block title %}Adicionar Progresso – {{ apadrinhado.nome }}{% endblock %}
+
+{% block content %}
+<h1>Adicionar Progresso para: {{ apadrinhado.nome }}</h1>
+{% if messages %}
+  <ul class="messages">
+    {% for message in messages %}
+      <li class="{{ message.tags }}">{{ message }}</li>
+    {% endfor %}
+  </ul>
+{% endif %}
+<form method="post">
+  {% csrf_token %}
+  <div>
+    <label for="mes">Mês:</label>
+    <input type="text" name="mes" id="mes" value="{{ request.POST.mes }}">
+  </div>
+  <div>
+    <label for="nota">Nota:</label>
+    <input type="number" step="0.01" name="nota" id="nota" value="{{ request.POST.nota }}">
+  </div>
+  <div>
+    <label for="frequencia">Frequência (%):</label>
+    <input type="number" step="0.01" name="frequencia" id="frequencia" value="{{ request.POST.frequencia }}">
+  </div>
+  <div>
+    <label for="comentario">Comentário do Professor (opcional):</label>
+    <textarea name="comentario" id="comentario">{{ request.POST.comentario }}</textarea>
+  </div>
+  <button type="submit">Salvar Progresso</button>
+</form>
+
+<p><a href="{% url 'lista_apadrinhados' %}" class="btn-edit">Voltar</a></p>
+{% endblock %}

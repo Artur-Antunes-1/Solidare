@@ -1,0 +1,193 @@
+{% extends base_template %}
+{% load static %}
+
+{% block title %}Conversa – {{ apadrinhado.nome }}{% endblock %}
+
+{% block content %}
+<style>
+  /* ---------------------------------------------------
+     1) Container centralizado
+  --------------------------------------------------- */
+  .container-conversa {
+    max-width: 700px;
+    margin: 3rem auto 2rem;
+    padding: 0 1rem;
+    box-sizing: border-box;
+  }
+  /* ---------------------------------------------------
+     2) Título da conversa
+  --------------------------------------------------- */
+  .container-conversa h2 {
+    color: #000000;
+    font-size: 2rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+  }
+  /* ---------------------------------------------------
+     3) Lista de mensagens (bolhas)
+  --------------------------------------------------- */
+  .lista-mensagens {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 2rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .lista-mensagens li {
+    display: flex;
+    flex-direction: column;
+    word-wrap: break-word;
+    max-width: 75%;
+  }
+  /* Mensagens enviadas pelo COLABORADOR (alinhadas à esquerda) */
+  .mensagem-colaborador {
+    background-color: #f8d7da; /* rosa claro */
+    color: #2c3e50;
+    padding: 0.8rem 1rem;
+    border-radius: 12px 12px 0 12px;
+    align-self: flex-start;
+  }
+  /* Mensagens enviadas pelo ADMIN (alinhadas à direita) */
+  .mensagem-admin {
+    background-color: #d1f2eb; /* azul claro */
+    color: #2c3e50;
+    padding: 0.8rem 1rem;
+    border-radius: 12px 12px 12px 0;
+    align-self: flex-end;
+  }
+  /* 3.1) Meta (remetente + data) dentro da bolha */
+  .lista-mensagens li .meta {
+    font-size: 0.75rem;
+    color: #555;
+    margin-bottom: 0.25rem;
+  }
+  /* 3.2) Texto da mensagem */
+  .lista-mensagens li .conteudo {
+    font-size: 0.95rem;
+    line-height: 1.4;
+  }
+  /* ---------------------------------------------------
+     4) Formulário de resposta do ADMIN
+  --------------------------------------------------- */
+  .form-resposta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+  }
+  .form-resposta textarea {
+    width: 100%;
+    min-height: 100px;
+    resize: vertical;
+    padding: 0.6rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 0.95rem;
+    font-family: Arial, sans-serif;
+  }
+  .form-resposta button {
+    align-self: flex-end;
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 0.5rem 1.2rem;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+  }
+  .form-resposta button:hover {
+    background-color: #c0392b;
+  }
+  /* ---------------------------------------------------
+     5) Mensagem de “não há conversas”
+  --------------------------------------------------- */
+  .sem-mensagens {
+    color: #000000;
+    font-style: italic;
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+  /* ---------------------------------------------------
+     6) Botão “Voltar”
+  --------------------------------------------------- */
+  .back-link {
+    display: inline-block;
+    margin-top: 1rem;
+    color: #000000;
+    text-decoration: none;
+    font-size: 0.95rem;
+  }
+  .back-link:hover {
+    text-decoration: underline;
+  }
+  /* ---------------------------------------------------
+     7) Ajustes para mobile
+  --------------------------------------------------- */
+  @media (max-width: 600px) {
+    .container-conversa {
+      margin: 2rem auto 1rem;
+    }
+    .container-conversa h2 {
+      font-size: 1.6rem;
+    }
+    .lista-mensagens li {
+      max-width: 100%;
+    }
+    .mensagem-colaborador,
+    .mensagem-admin {
+      font-size: 0.9rem;
+      padding: 0.6rem 0.9rem;
+    }
+    .form-resposta textarea {
+      font-size: 0.9rem;
+    }
+    .form-resposta button {
+      font-size: 0.9rem;
+      padding: 0.4rem 0.9rem;
+    }
+    .back-link {
+      font-size: 0.85rem;
+    }
+  }
+</style>
+
+<div class="container-conversa">
+  <h2>Conversa com {{ apadrinhado.nome }}</h2>
+
+  {% if mensagens %}
+    <ul class="lista-mensagens">
+      {% for msg in mensagens %}
+        <li class="{% if msg.remetente == request.user %}mensagem-admin{% else %}mensagem-colaborador{% endif %}">
+          <div class="meta">
+            {% if msg.remetente == request.user %}
+              Eu – {{ msg.timestamp|date:"d/m/Y H:i" }}
+            {% else %}
+              {{ msg.remetente.username }} – {{ msg.timestamp|date:"d/m/Y H:i" }}
+            {% endif %}
+          </div>
+          <div class="conteudo">{{ msg.texto }}</div>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="sem-mensagens">Não há mensagens para este apadrinhado.</p>
+  {% endif %}
+
+  {# Se for administrador, exibe o formulário de resposta #}
+  {% if request.user.perfil.tipo_usuario == 'administrador' %}
+    <form method="post" class="form-resposta">
+      {% csrf_token %}
+      <textarea name="texto_resposta" placeholder="Digite sua resposta" required></textarea>
+      <button type="submit">Enviar Resposta</button>
+    </form>
+  {% endif %}
+
+  {# Botão “← Voltar” redireciona dependendo do tipo de usuário #}
+  <a href="{% if request.user.perfil.tipo_usuario == 'administrador' %}{% url 'mensagens_pendentes' %}{% else %}{% url 'mensagens' %}{% endif %}"
+     class="back-link">
+    ← Voltar
+  </a>
+</div>
+{% endblock %}

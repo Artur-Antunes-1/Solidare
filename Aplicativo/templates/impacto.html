@@ -1,9 +1,71 @@
 {% extends 'base.html' %}
-{% block title %}Meu Impacto{% endblock %}
+{% load static %}
 {% block content %}
-<h2>Meu Impacto</h2>
-<div class="card">
-    <p>Total doado: R$ {{ total_doado }}</p>
-    <p>Alunos apadrinhados: {{ num_alunos }}</p>
+<style>
+  body {
+    background-color: #2c3e50;
+    color: #ecf0f1;
+  }
+  .impacto-card {
+    width: 100%;
+    max-width: 400px;
+    margin: 3rem auto;
+    background-color: #f4f4f4;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    padding: 1.5rem;
+    color: #333;
+  }
+  .impacto-card h3 {
+    margin-top: 0;
+    text-align: center;
+    font-size: 1.3rem;
+    margin-bottom: 1rem;
+  }
+  .impacto-item {
+    margin-bottom: 1rem;
+    font-size: 1rem;
+  }
+  .impacto-item span {
+    font-weight: bold;
+    color: #007bff;
+  }
+  .botoes-acoes {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 1.5rem;
+  }
+  .botoes-acoes a {
+    flex: 1;
+    text-align: center;
+    background-color: #28a745;
+    color: white;
+    padding: 0.5rem;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 0.9rem;
+    margin: 0 0.25rem;
+  }
+  .botoes-acoes a:nth-child(1) {
+    background-color: #6c757d;
+  }
+  .botoes-acoes a:hover {
+    opacity: 0.9;
+  }
+</style>
+
+<div class="impacto-card">
+  <h3>Meu Impacto</h3>
+  <div class="impacto-item">
+    Total doado: <span>R$ {{ total_doado|floatformat:2 }}</span>
+  </div>
+  <div class="impacto-item">
+    Alunos apadrinhados: <span>{{ num_alunos }}</span>
+  </div>
+
+  <div class="botoes-acoes">
+    <a href="{% url 'painel_contribuicoes' %}">Ver histórico</a>
+    <a href="{% url 'realizar_doacao' %}">Nova doação</a>
+  </div>
 </div>
 {% endblock %}

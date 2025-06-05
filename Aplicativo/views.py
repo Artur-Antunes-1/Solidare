@@ -1,13 +1,27 @@
-from django.shortcuts import render, redirect,get_object_or_404
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.contrib.auth import login,authenticate,logout
+from django.contrib.auth import login, authenticate, logout
 from django.contrib import messages
-from .models import Aluno, Doacao, Boletim, ComentarioProfessor, Perfil,Profile
 from django.db import IntegrityError
-from .models import Apadrinhado
+from django.db.models import Count, Q
 from django.http import HttpResponseForbidden
-from .models import Indicacao, Contratacao
+import json
+
+from .models import (
+    Aluno,
+    Apadrinhado,
+    Boletim,
+    ComentarioProfessor,
+    Contratacao,
+    Desempenho,
+    Doacao,
+    Indicacao,
+    Perfil,
+    Profile,
+    Visita,
+    Mensagem,
+)
 
 def home_view(request):
     return render(request, 'home.html')
@@ -142,13 +156,96 @@ def excluir_apadrinhado(request, apadrinhado_id):
 
 @login_required
 def mensagens_view(request):
-    
-    alunos = Aluno.objects.filter(apadrinhado_por=request.user)
-    return render(request, 'mensagens.html', {'alunos': alunos})
+    perfil = getattr(request.user, 'perfil', None)
+    if not perfil:
+        return HttpResponseForbidden("Perfil não encontrado.")
+
+    if perfil.tipo_usuario != 'colaborador':
+        # Se não for colaborador, redireciona ao painel de pendentes (admin)
+        return redirect('mensagens_pendentes')
+
+    # Filtra apenas os apadrinhados que pertencem a este colaborador
+    meus_apadrinhados = Apadrinhado.objects.filter(apadrinhado_por=request.user)
+
+    if request.method == 'POST':
+        ap_id = request.POST.get('apadrinhado_id')
+        texto = request.POST.get('texto', '').strip()
+        if ap_id and texto:
+            # Garante que o colaborador só envie mensagem a um apadrinhado realmente seu
+            ap = get_object_or_404(Apadrinhado, id=ap_id, apadrinhado_por=request.user)
+            Mensagem.objects.create(
+                remetente=request.user,
+                destinatario=ap,
+                texto=texto,
+                entregue=False   # marca como “pendente” até o admin visualizar
+            )
+        # after sending, volta para a mesma lista de mensagens do colaborador
+        return redirect('mensagens')
+
+    # Ao exibir a página, passamos uma lista de dicionários com cada apadrinhado
+    lista_info = [{'apadrinhado': ap} for ap in meus_apadrinhados]
+    return render(request, 'mensagens.html', {
+        'lista_info': lista_info,
+    })
+
 
 @login_required
-def doacoes_view(request):
-    return render(request, 'doacoes.html')
+def mensagens_pendentes_view(request):
+    perfil = getattr(request.user, 'perfil', None)
+    if not perfil or perfil.tipo_usuario != 'administrador':
+        return HttpResponseForbidden("Acesso restrito: apenas administradores podem ver mensagens.")
+
+    # “mensagens” é o related_name que ligamos no modelo Mensagem.destinatario
+    apadrinhados = Apadrinhado.objects.annotate(
+        pendentes=Count('mensagens', filter=Q(mensagens__entregue=False))
+    ).order_by('nome')
+
+    return render(request, 'mensagens_pendentes.html', {
+        'apadrinhados': apadrinhados,
+    })
+
+
+@login_required
+def conversa_aluno(request, aluno_id):
+    perfil = getattr(request.user, 'perfil', None)
+    if not perfil:
+        return HttpResponseForbidden("Perfil não encontrado.")
+    
+    if request.user.perfil.tipo_usuario == 'administrador':
+        base = 'homeAdmin.html'
+    else:
+        base = 'home.html'
+
+    apadrinhado = get_object_or_404(Apadrinhado, id=aluno_id)
+
+    # Se for colaborador, só acessa se ele for padrinho desse apadrinhado
+    if perfil.tipo_usuario == 'colaborador' and apadrinhado.apadrinhado_por != request.user:
+        return HttpResponseForbidden("Você não tem permissão para acessar esta conversa.")
+
+    # Marca todas as mensagens pendentes como entregues (independente de ser GET ou POST)
+    Mensagem.objects.filter(destinatario=apadrinhado, entregue=False).update(entregue=True)
+
+    # Se vier um POST e for admin, cria a mensagem de resposta
+    if request.method == 'POST' and perfil.tipo_usuario == 'administrador':
+        texto_resposta = request.POST.get('texto_resposta', '').strip()
+        if texto_resposta:
+            Mensagem.objects.create(
+                remetente=request.user,
+                destinatario=apadrinhado,
+                texto=texto_resposta,
+                entregue=False  # já cadastra como pendente, para que o colaborador saiba que tem mensagem nova
+            )
+        # Depois redireciona para mesmo view, para recarregar a lista de mensagens (e já marcar como entregues antigas)
+        return redirect('conversa_aluno', aluno_id=aluno_id)
+
+    # Para GET: busca todas as mensagens (já marcadas como entregues na linha anterior)
+    todas_mensagens = Mensagem.objects.filter(destinatario=apadrinhado).order_by('timestamp')
+
+    return render(request, 'conversa_aluno.html', {
+        'apadrinhado': apadrinhado,
+        'mensagens': todas_mensagens,
+        'base_template': base,
+    })
 
 @login_required
 def progresso_view(request, aluno_id):
@@ -156,13 +253,6 @@ def progresso_view(request, aluno_id):
     boletins = Boletim.objects.filter(aluno=aluno)
     comentarios = ComentarioProfessor.objects.filter(aluno=aluno)
     return render(request, 'progresso.html', {'aluno': aluno, 'boletins': boletins, 'comentarios': comentarios})
-
-@login_required
-def impacto_view(request):
-    doacoes = Doacao.objects.filter(usuario=request.user)
-    total = sum(d.valor for d in doacoes if d.valor)
-    alunos = Aluno.objects.filter(apadrinhado_por=request.user).count()
-    return render(request, 'impacto.html', {'total_doado': total, 'num_alunos': alunos})
 
 @login_required
 def banco_talentos_view(request):
@@ -294,4 +384,413 @@ def perfil_view(request):
         'foto': profile.foto.url if profile.foto else None,
         'profile': profile,
         'is_editing': is_editing,
+    })
+
+@login_required
+def detalhes_aluno(request, apadrinhado_id):
+    """
+    Cenário 1: Consulta ao boletim do apadrinhado (notas, frequência, comentários).
+    """
+    apadrinhado = get_object_or_404(Apadrinhado, id=apadrinhado_id)
+    desempenho = Desempenho.objects.filter(apadrinhado=apadrinhado).order_by('mes')
+
+    if request.user.perfil.tipo_usuario == 'administrador':
+        base = 'homeAdmin.html'
+    else:
+        base = 'home.html'
+
+    return render(request, 'detalhes_aluno.html', {
+        'apadrinhado': apadrinhado,
+        'base_template': base,
+        'desempenho': desempenho,
+    })
+
+
+@login_required
+def boletim_apadrinhado(request, apadrinhado_id):
+    apadrinhado = get_object_or_404(Apadrinhado, id=apadrinhado_id)
+
+    if request.user.perfil.tipo_usuario == 'administrador':
+        base = 'homeAdmin.html'
+    else:
+        base = 'home.html'
+
+    # Se já existir lógica de permissão, mantenha aqui antes de buscar desempenho
+    desempenho_list = Desempenho.objects.filter(apadrinhado=apadrinhado).order_by('mes')
+
+    return render(request, 'boletim_apadrinhado.html', {
+        'apadrinhado': apadrinhado,
+        'base_template': base,
+        'desempenho_list': desempenho_list,
+    })
+
+@login_required
+def historico_progresso(request, apadrinhado_id):
+    """
+    Cenário 2: Relatórios de progresso periódicos - gráficos e estatísticas
+    Somente administradores ou o próprio padrinho do apadrinhado podem acessar.
+    """
+    apadrinhado = get_object_or_404(Apadrinhado, id=apadrinhado_id)
+
+    if request.user.perfil.tipo_usuario == 'administrador':
+        base = 'homeAdmin.html'
+    else:
+        base = 'home.html'
+
+    # 1) Verifica permissão: se não for admin nem padrinho, nega.
+    perfil = getattr(request.user, 'perfil', None)
+    if not perfil:
+        return HttpResponseForbidden("Perfil não encontrado.")
+
+    if perfil.tipo_usuario != 'administrador' and apadrinhado.apadrinhado_por != request.user:
+        return HttpResponseForbidden("Você não tem permissão para visualizar este histórico.")
+
+    # 2) Busca os registros de Desempenho
+    desempenho = Desempenho.objects.filter(apadrinhado=apadrinhado).order_by('mes')
+
+    meses = [d.mes for d in desempenho]
+    notas = [float(d.nota) for d in desempenho]
+    frequencias = [float(d.frequencia) for d in desempenho]
+
+    meses_json = json.dumps(meses)
+    notas_json = json.dumps(notas)
+    frequencias_json = json.dumps(frequencias)
+
+    context = {
+        'apadrinhado': apadrinhado,
+        'meses_json': meses_json,
+        'notas_json': notas_json,
+        'frequencias_json': frequencias_json,
+        'base_template': base,
+    }
+    return render(request, 'historico_progresso.html', context)
+
+@login_required
+def progresso_filtrado(request, apadrinhado_id):
+    """
+    Cenário 3: Relatórios personalizados com filtros via GET
+    Parâmetro 'filtro' pode ser: 'nota', 'frequencia' ou 'comentario'.
+    """
+    apadrinhado = get_object_or_404(Apadrinhado, id=apadrinhado_id)
+    
+    if request.user.perfil.tipo_usuario == 'administrador':
+        base = 'homeAdmin.html'
+    else:
+        base = 'home.html'
+
+    filtro = request.GET.get('filtro', 'nota')  # valor padrão: nota
+
+    desempenho = Desempenho.objects.filter(apadrinhado=apadrinhado).order_by('mes')
+
+    if filtro == 'nota':
+        dados = [(registro.mes, registro.nota) for registro in desempenho]
+    elif filtro == 'frequencia':
+        dados = [(registro.mes, registro.frequencia) for registro in desempenho]
+    elif filtro == 'comentario':
+        dados = [(registro.mes, registro.comentario_professor) for registro in desempenho]
+    else:
+        dados = []
+
+    return render(request, 'progresso_filtrado.html', {
+        'apadrinhado': apadrinhado,
+        'dados': dados,
+        'filtro': filtro,
+        'base_template': base,
+    })
+
+@login_required
+def agendar_visita_view(request, apadrinhado_id):
+    # Apenas padrinhos podem agendar (todos usuários que não sejam admin, por exemplo).
+    # Aqui pressupomos que 'administrador' é o tipo de perfil que não faz agendamentos.
+    try:
+        tipo = request.user.perfil.tipo_usuario
+    except Perfil.DoesNotExist:
+        return HttpResponseForbidden("Perfil não encontrado.")
+
+    if tipo == 'administrador':
+        return HttpResponseForbidden("Administradores não podem agendar visita como padrinho.")
+
+    apadrinhado = get_object_or_404(Apadrinhado, id=apadrinhado_id)
+
+    # Verifica se este apadrinhado já está com outro padrinho?
+    # Se quiser permitir apenas padrinhos já vinculados, faça:
+    # if apadrinhado.apadrinhado_por != request.user:
+    #     return HttpResponseForbidden("Você não é padrinho deste aluno.")
+
+    if request.method == 'POST':
+        data = request.POST.get('data')
+        hora = request.POST.get('hora')
+        motivo = request.POST.get('motivo', '').strip()
+
+        erros = []
+        if not data:
+            erros.append("Data é obrigatória.")
+        if not hora:
+            erros.append("Hora é obrigatória.")
+        if not motivo:
+            erros.append("Motivo é obrigatório.")
+
+        if erros:
+            for erro in erros:
+                messages.error(request, erro)
+            # Re-renderiza o form com os erros
+            return render(request, 'agendar_visita.html', {
+                'apadrinhado': apadrinhado,
+                'data': data,
+                'hora': hora,
+                'motivo': motivo,
+            })
+
+        # Cria a visita com status “Pendente”
+        Visita.objects.create(
+            padrinho=request.user,
+            apadrinhado=apadrinhado,
+            data=data,
+            hora=hora,
+            motivo=motivo,
+            status='Pendente'
+        )
+
+        messages.success(request, "Visita solicitada com sucesso! Aguarde aprovação do administrador.")
+        return redirect('minhas_visitas')
+
+    # GET: exibe formulário em branco
+    return render(request, 'agendar_visita.html', {
+        'apadrinhado': apadrinhado
+    })
+
+@login_required
+def minhas_visitas_view(request):
+    visitas = Visita.objects.filter(padrinho=request.user).order_by('-data_solicitacao')
+    return render(request, 'minhas_visitas.html', {
+        'visitas': visitas
+    })
+
+@login_required
+def cancelar_visita_view(request, visita_id):
+    visita = get_object_or_404(Visita, id=visita_id)
+
+    # Só o próprio padrinho da visita pode cancelar
+    if visita.padrinho != request.user:
+        return HttpResponseForbidden("Você não tem permissão para cancelar esta visita.")
+
+    # Se já estiver cancelada, apenas redireciona
+    if visita.status == 'Cancelada':
+        messages.info(request, "Visita já está cancelada.")
+        return redirect('minhas_visitas')
+
+    # Permite cancelar visitas pendentes ou confirmadas
+    visita.status = 'Cancelada'
+    visita.save()
+    messages.success(request, "Visita cancelada com sucesso.")
+    return redirect('minhas_visitas')
+
+@login_required
+def visitas_pendentes_view(request):
+    try:
+        perfil = request.user.perfil
+    except Perfil.DoesNotExist:
+        return HttpResponseForbidden("Perfil não encontrado.")
+
+    if perfil.tipo_usuario != 'administrador':
+        return HttpResponseForbidden("Acesso restrito a administradores.")
+
+    visitas_pendentes = Visita.objects.filter(status='Pendente').order_by('data', 'hora')
+    return render(request, 'visitas_pendentes.html', {
+        'visitas': visitas_pendentes
+    })
+
+@login_required
+def aprovar_visita_view(request, visita_id):
+    try:
+        perfil = request.user.perfil
+    except Perfil.DoesNotExist:
+        return HttpResponseForbidden("Perfil não encontrado.")
+
+    if perfil.tipo_usuario != 'administrador':
+        return HttpResponseForbidden("Acesso restrito a administradores.")
+
+    visita = get_object_or_404(Visita, id=visita_id)
+
+    # Só aprova se estiver pendente
+    if visita.status != 'Pendente':
+        messages.error(request, "Esta visita não está mais pendente.")
+        return redirect('visitas_pendentes')
+
+    visita.status = 'Confirmada'
+    visita.save()
+    messages.success(request, f"Visita de {visita.padrinho.username} a {visita.apadrinhado.nome} confirmada.")
+    return redirect('visitas_pendentes')
+
+@login_required
+def recusar_visita_view(request, visita_id):
+    try:
+        perfil = request.user.perfil
+    except Perfil.DoesNotExist:
+        return HttpResponseForbidden("Perfil não encontrado.")
+
+    if perfil.tipo_usuario != 'administrador':
+        return HttpResponseForbidden("Acesso restrito a administradores.")
+
+    visita = get_object_or_404(Visita, id=visita_id)
+
+    # Só recusar se estiver pendente
+    if visita.status != 'Pendente':
+        messages.error(request, "Esta visita não está mais pendente.")
+        return redirect('visitas_pendentes')
+
+    visita.status = 'Cancelada'
+    visita.save()
+    messages.success(request, f"Visita de {visita.padrinho.username} a {visita.apadrinhado.nome} recusada.")
+    return redirect('visitas_pendentes')
+
+@login_required
+def adicionar_progresso_view(request, apadrinhado_id):
+    # 1) Verifica se é administrador
+    try:
+        if request.user.perfil.tipo_usuario != 'administrador':
+            return HttpResponseForbidden("Acesso restrito: somente administradores podem adicionar progresso.")
+    except Perfil.DoesNotExist:
+        return HttpResponseForbidden("Perfil não encontrado.")
+
+    # 2) Busca o objeto Apadrinhado ou 404
+    ap = get_object_or_404(Apadrinhado, id=apadrinhado_id)
+
+    if request.method == 'POST':
+        mes = request.POST.get('mes', '').strip()
+        nota = request.POST.get('nota', '').strip()
+        frequencia = request.POST.get('frequencia', '').strip()
+        comentario = request.POST.get('comentario', '').strip()
+
+        erros = []
+        if not mes:
+            erros.append("Campo 'Mês' é obrigatório.")
+        if not nota:
+            erros.append("Campo 'Nota' é obrigatório.")
+        if not frequencia:
+            erros.append("Campo 'Frequência' é obrigatório.")
+
+        # Se houver erros, exibe no template
+        if erros:
+            for e in erros:
+                messages.error(request, e)
+            return render(request, 'adicionar_progresso.html', {'apadrinhado': ap})
+
+        # Cria o Desempenho
+        try:
+            Desempenho.objects.create(
+                apadrinhado=ap,
+                mes=mes,
+                nota=nota,
+                frequencia=frequencia,
+                comentario_professor=comentario
+            )
+            messages.success(request, f"Progresso de '{ap.nome}' registrado para {mes}.")
+            return redirect('boletim_apadrinhado', apadrinhado_id=ap.id)
+        except Exception:
+            messages.error(request, "Falha ao salvar o progresso.")
+            return render(request, 'adicionar_progresso.html', {'apadrinhado': ap})
+
+    # GET: apenas exibe o formulário vazio
+    return render(request, 'adicionar_progresso.html', {'apadrinhado': ap})
+
+@login_required
+def realizar_doacao(request):
+    if request.method == 'POST':
+        apadrinhado_id = request.POST.get('apadrinhado')
+        tipo = request.POST.get('tipo')
+        valor_raw = request.POST.get('valor')
+        descricao = request.POST.get('descricao', '').strip()
+
+        # Criamos instância vazia (ainda sem apadrinhado atribuído)
+        doacao = Doacao(colaborador=request.user, mensagem_erro='')
+
+        try:
+            # 1) Validar APADRINHADO: precisa pertencer ao usuário logado
+            if not apadrinhado_id:
+                raise ValueError("Selecione um apadrinhado válido.")
+            ap = get_object_or_404(
+                Apadrinhado,
+                pk=apadrinhado_id,
+                apadrinhado_por=request.user
+            )
+            doacao.apadrinhado = ap
+
+            # 2) Validar tipo
+            if tipo not in dict(Doacao.TIPO_CHOICES).keys():
+                raise ValueError("Tipo de doação inválido.")
+            doacao.tipo = tipo
+
+            # 3) Caso seja financeira, validar valor
+            if tipo == 'financeira':
+                if not valor_raw:
+                    raise ValueError("Informe o valor para a doação financeira.")
+                try:
+                    valor = float(valor_raw.replace(',', '.'))
+                except ValueError:
+                    raise ValueError("Valor deve ser numérico.")
+                if valor <= 0:
+                    raise ValueError("Valor inválido para doação financeira.")
+                doacao.valor = valor
+            else:
+                doacao.valor = None
+
+            # 4) Atribuir descrição
+            doacao.descricao = descricao
+
+            # 5) Marcar sucesso e salvar
+            doacao.sucesso = True
+            doacao.save()
+            messages.success(request, "Doação realizada com sucesso!")
+        except Exception as e:
+            # Marcar falha, salvar mensagem de erro e persistir
+            doacao.sucesso = False
+            doacao.mensagem_erro = str(e)
+            doacao.valor = getattr(doacao, 'valor', None)
+            doacao.descricao = descricao
+            doacao.save()
+            messages.error(request, f"Erro na doação: {e}")
+
+        return redirect('painel_contribuicoes')
+
+    # Para GET: carregar somente os APADRINHADOS que você patrocina
+    apadrinhados = Apadrinhado.objects.filter(apadrinhado_por=request.user).order_by('nome')
+    return render(request, 'realizar_doacao.html', {
+        'apadrinhados': apadrinhados,
+        'TIPO_CHOICES': Doacao.TIPO_CHOICES,
+    })
+
+@login_required
+def painel_contribuicoes(request):
+    # Listar apenas as doações feitas pelo usuário
+    doacoes = Doacao.objects.filter(colaborador=request.user).order_by('-data')
+    return render(request, 'painel_contribuicoes.html', {
+        'doacoes': doacoes,
+    })
+
+@login_required
+def impacto_view(request):
+    # soma dos valores de doações financeiras feitas pelo usuário
+    doacoes = Doacao.objects.filter(colaborador=request.user)
+    total = sum(d.valor for d in doacoes if d.valor)
+
+    # conta quantos Apadrinhado têm apadrinhado_por = request.user
+    num_apadrinhados = Apadrinhado.objects.filter(apadrinhado_por=request.user).count()
+
+    return render(request, 'impacto.html', {
+        'total_doado': total,
+        'num_alunos': num_apadrinhados,
+    })
+
+@login_required
+def doacoes_recebidas(request):
+    # Só usuários com perfil.tipo_usuario == 'administrador' podem acessar
+    if not hasattr(request.user, 'perfil') or request.user.perfil.tipo_usuario != 'administrador':
+        return HttpResponseForbidden("Apenas administradores podem ver as doações recebidas.")
+
+    # Busca todas as doações, da mais recente para a mais antiga
+    doacoes = Doacao.objects.all().order_by('-data')
+
+    return render(request, 'doacoes_recebidas.html', {
+        'doacoes': doacoes,
     })

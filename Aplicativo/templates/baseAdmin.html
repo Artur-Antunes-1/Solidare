@@ -5,17 +5,21 @@
     <meta charset="UTF-8">
     <title>{% block title %}Solidare{% endblock %}</title>
     <link rel="stylesheet" href="{% static 'base.css' %}">
+    <link rel="stylesheet" href="{% static 'core/css/styles.css' %}">
 </head>
 <body>
     <header style="display: flex; align-items: center; justify-content: space-between;">
       <div style="display: flex; align-items: center;">
-        <a href="{% url 'home' %}">
+        <a href="{% url 'homeAdmin' %}">
           <img src="{% static 'img/logo.jpg' %}" alt="Logo do site" style="width: 80px; height: 90px; margin-right: 1rem;">
         </a>
         <nav>
-          <a href="{% url 'homeAdmin' %}">Inicio</a>
-          <a href="{% url 'registrar_apadrinhado' %}">Cadastrar apadrinhado</a>
-          <a href="{% url 'lista_apadrinhados' %}">Lista de apadrinhados</a>
+          {# observa que “Inicio” aponta para 'homeAdmin' #}
+          <a href="{% url 'registrar_apadrinhado' %}">Cadastrar Apadrinhado</a>
+          <a href="{% url 'lista_apadrinhados' %}">Lista de Apadrinhados</a>
+          <a href="{% url 'visitas_pendentes' %}">Visitas Pendentes</a>
+          <a href="{% url 'mensagens_pendentes' %}">Mensagens Colaboradores</a>
+          <a href="{% url 'doacoes_recebidas' %}">Doações Recebidas</a>
         </nav>
       </div>
       <div style="display: flex; align-items: center;">
@@ -29,18 +33,19 @@
         </a>
         <form method="post" action="{% url 'logout' %}" style="margin: 0;">
           {% csrf_token %}
-          <button type="submit" style="background:none; border:none; color:white; font-weight:400; cursor:pointer;">Sair</button>
+          <button type="submit" style="background:none; border:none; color:black; font-weight:400; cursor:pointer;">
+            Sair
+          </button>
         </form>
-      {% else %}
-        <a href="{% url 'login' %}" style="color: white; font-weight: 700; margin-right: 1rem;">Login</a>
-        <a href="{% url 'registrar' %}" style="color: white; font-weight: 400;">Cadastro</a>
-      {% endif %}
+        {% else %}
+        <a href="{% url 'login' %}" style="color: black; font-weight: 700; margin-right: 1rem;">Login</a>
+        <a href="{% url 'registrar' %}" style="color: black; font-weight: 400;">Cadastro</a>
+        {% endif %}
       </div>
-    </header>  
+    </header>
     <main>
         {% block content %}{% endblock %}
     </main>
-
     <footer>
         <p>&copy; 2025 - Solidare</p>
     </footer>

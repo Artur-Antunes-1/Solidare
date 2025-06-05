@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <title>{% block title %}Solidare{% endblock %}</title>
     <link rel="stylesheet" href="{% static 'base.css' %}">
+    <link rel="stylesheet" href="{% static 'core/css/styles.css' %}">
 </head>
 <body>
     <header style="display: flex; align-items: center; justify-content: space-between;">
@@ -14,10 +15,11 @@
         </a>
         <nav>
           <a href="{% url 'mensagens' %}">Mensagens</a>
-          <a href="{% url 'doacoes' %}">Doações</a>
+          <a href="{% url 'realizar_doacao' %}">Doações</a>
           <a href="{% url 'impacto' %}">Meu Impacto</a>
           <a href="{% url 'apadrinhar' %}">Apadrinhe</a>
           <a href="{% url 'meus_apadrinhados' %}">Apadrinhados</a>
+          <a href="{% url 'minhas_visitas' %}">Minhas Visitas</a>
         </nav>
       </div>
       <div style="display: flex; align-items: center;">
@@ -31,17 +33,26 @@
         </a>
         <form method="post" action="{% url 'logout' %}" style="margin: 0;">
           {% csrf_token %}
-          <button type="submit" style="background:none; border:none; color:white; font-weight:400; cursor:pointer;">Sair</button>
+          <button type="submit" style="background:none; border:none; color:black; font-weight:400; cursor:pointer;">
+            Sair
+          </button>
         </form>
-      {% else %}
-        <a href="{% url 'login' %}" style="color: white; font-weight: 700; margin-right: 1rem;">Login</a>
-        <a href="{% url 'registrar' %}" style="color: white; font-weight: 400;">Cadastro</a>
-      {% endif %}
+        {% else %}
+        <a href="{% url 'login' %}" style="color: black; font-weight: 700; margin-right: 1rem;">Login</a>
+        <a href="{% url 'registrar' %}" style="color: black; font-weight: 400;">Cadastro</a>
+        {% endif %}
       </div>
-    </header>  
+    </header>
 
     <main>
-        {% block content %}{% endblock %}
+      {% if messages %}
+        <ul class="messages">
+          {% for message in messages %}
+            <li class="{{ message.tags }}">{{ message }}</li>
+        {% endfor %}
+        </ul>
+      {% endif %}  
+      {% block content %}{% endblock %}
     </main>
 
     <footer>

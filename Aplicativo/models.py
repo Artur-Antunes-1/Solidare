@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.utils import timezone
 
 # MODELS
 class Perfil(models.Model):
@@ -44,23 +45,6 @@ class Aluno(models.Model):
 
     def __str__(self):
         return self.nome
-
-
-class Mensagem(models.Model):
-    remetente = models.ForeignKey(User, on_delete=models.CASCADE)
-    destinatario = models.ForeignKey(Aluno, on_delete=models.CASCADE)
-    texto = models.TextField()
-    timestamp = models.DateTimeField(auto_now_add=True)
-    entregue = models.BooleanField(default=False)
-
-class Doacao(models.Model):
-    TIPO_CHOICES = [('Financeira', 'Financeira'), ('Material', 'Material')]
-    tipo = models.CharField(max_length=10, choices=TIPO_CHOICES)
-    valor = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    descricao = models.CharField(max_length=255, blank=True)
-    comprovante = models.FileField(upload_to='comprovantes/', null=True, blank=True)
-    usuario = models.ForeignKey(User, on_delete=models.CASCADE)
-    data = models.DateTimeField(auto_now_add=True)
 
 class Boletim(models.Model):
     aluno = models.ForeignKey(Aluno, on_delete=models.CASCADE)
@@ -109,10 +93,7 @@ class Apadrinhado(models.Model):
 
     nome = models.CharField(max_length=100)
     idade = models.PositiveIntegerField()
-    genero = models.CharField(
-        max_length=1,
-        choices=GENERO_CHOICES,   # use exatamente o mesmo nome e maiúsculas
-    )
+    genero = models.CharField(max_length=1, choices=GENERO_CHOICES)
     apadrinhado_por = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -120,3 +101,87 @@ class Apadrinhado(models.Model):
         blank=True,
         null=True,
     )
+
+    def __str__(self):
+        return self.nome
+
+class Mensagem(models.Model):
+    remetente = models.ForeignKey(User, on_delete=models.CASCADE)
+    destinatario = models.ForeignKey(
+        Apadrinhado,
+        on_delete=models.CASCADE,
+        related_name='mensagens'   # <-- agora o reverso será apadrinhado.mensagens
+    )
+    texto = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+    entregue = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"Mensagem de {self.remetente.username} para {self.destinatario.nome} em {self.timestamp}"
+
+
+
+class Desempenho(models.Model):
+    apadrinhado = models.ForeignKey(Apadrinhado, on_delete=models.CASCADE)
+    mes = models.CharField(max_length=20)
+    nota = models.DecimalField(max_digits=4, decimal_places=2)
+    frequencia = models.DecimalField(max_digits=5, decimal_places=2)
+    comentario_professor = models.TextField(blank=True)
+
+    def __str__(self):
+        # Exibe “<nome do apadrinhado> – <mês>”
+        return f"{self.apadrinhado.nome} - {self.mes}"
+    
+class Visita(models.Model):
+    STATUS_CHOICES = (
+        ('Pendente', 'Pendente'),
+        ('Confirmada', 'Confirmada'),
+        ('Cancelada', 'Cancelada'),
+    )
+
+    padrinho = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='visitas_solicitadas'
+    )
+    apadrinhado = models.ForeignKey(
+        Apadrinhado,
+        on_delete=models.CASCADE,
+        related_name='visitas_recebidas'
+    )
+    data = models.DateField()
+    hora = models.TimeField()
+    motivo = models.TextField()
+    status = models.CharField(
+        max_length=10,
+        choices=STATUS_CHOICES,
+        default='Pendente'
+    )
+    data_solicitacao = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Visita de {self.padrinho.username} a {self.apadrinhado.nome} em {self.data} {self.hora} ({self.status})"
+
+class Doacao(models.Model):
+    TIPO_CHOICES = [
+        ('financeira', 'Financeira'),
+        ('material', 'Material'),
+    ]
+    colaborador = models.ForeignKey(User, on_delete=models.CASCADE)
+    # agora relaciona diretamente com Apadrinhado
+    apadrinhado = models.ForeignKey(
+        'Apadrinhado',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='doacoes'
+    )
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES)
+    valor = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    descricao = models.TextField(blank=True)
+    data = models.DateTimeField(auto_now_add=True)
+    sucesso = models.BooleanField(default=False)
+    mensagem_erro = models.TextField(blank=True)
+
+    def __str__(self):
+        return f"Doação de {self.colaborador.username} para {self.apadrinhado.nome} - {self.get_tipo_display()}"

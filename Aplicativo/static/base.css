@@ -2,25 +2,29 @@ body {
     margin: 0;
     padding: 0;
     min-height: 100vh;
-    background: #273F4F;
+    background: #F2F7F5;
     font-family: Arial, sans-serif;
 }
 
 header, nav {
-    background-color: #000000;
-    color: white;
+    background-color: #ffffff;
+    color: #000000;
     padding: 1rem;
+  }
+  
+  header{
+  border-bottom: 6px solid  #259C83;
 }
 footer {
-  background-color: #000000;
-  color: white;
+  background-color:  #259C83;
+  color:  #ffffff;
   padding: 1rem;
   bottom: 0;
   width: 100%;
 }
 
 nav a {
-    color: white;
+    color: #000000;  
     text-decoration: none;
     margin-right: 1rem;
 }
@@ -81,10 +85,10 @@ main {
 
   
   .auth-box {
-    background-color: #EFEEEA;
+    background-color: #259C83;
     padding: 2rem;
     border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 8px #000000;
     width: 100%;
     max-width: 430px;
   }
@@ -93,14 +97,14 @@ main {
     text-align: left;
     font-size: 30px;
     margin-bottom: 2rem;
-    color: #000;
+    color: #F2F7F5;
   }
   
   .auth-box label {
     display: block;
     margin-top: 1rem;
     font-size: 20px;
-    color: #000;
+    color: #F2F7F5;
     text-align: left;
   }
   
@@ -109,7 +113,7 @@ main {
     padding: 1rem;
     font-size: 16px;
     margin-top: 0.5rem;
-    background-color: #EFEEEA;
+    background-color: #F2F7F5;
     border: none;
     border-radius: 4px;
     display: block;
@@ -122,8 +126,8 @@ main {
     padding: 1rem;
     width: 100%;
     font-size: 18px;
-    background-color: #333;
-    color: white;
+    background-color: #095546;
+    color: #F2F7F5;
     border: none;
     border-radius: 4px;
     cursor: pointer;
@@ -164,13 +168,13 @@ main {
   }
   
   .hero-btn {
-    background-color: #d9d9d9;
+    background-color:  #259C83;
     padding: 1rem 2rem;
     border: none;
     border-radius: 6px;
     font-size: 1.1rem;
     text-decoration: none;
-    color: #000;
+    color: #F2F7F5;
     font-weight: 600;
     transition: background-color 0.2s;
   }
@@ -211,17 +215,6 @@ main {
     display: block;
     margin: 0 auto 1rem;
   }
-  
-  
-  .auth-box {
-    background-color: #d9d9d9;
-    padding: 2rem;
-    border-radius: 8px;
-    width: 100%;
-    max-width: 430px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  }
-  
   
   .profile-container {
     max-width: 500px;

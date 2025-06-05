@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<style>
+  body {
+    background-color: #2c3e50;
+    color: #ecf0f1;
+  }
+  .container-painel {
+    width: 90%;
+    max-width: 1000px;
+    margin: 2rem auto;
+  }
+  h3 {
+    color: #ecf0f1;
+    margin-bottom: 1rem;
+  }
+  .table-painel {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #ffffff;
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  }
+  .table-painel th,
+  .table-painel td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #ddd;
+    font-size: 0.9rem;
+    text-align: left;
+    color: #333;
+  }
+  .table-painel th {
+    background-color: #343a40;
+    color: #fff;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+  }
+  .table-painel tr:hover {
+    background-color: #f1f1f1;
+  }
+  .badge-sucesso {
+    display: inline-block;
+    background-color: #28a745;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+  }
+  .badge-falha {
+    display: inline-block;
+    background-color: #dc3545;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+  }
+  .sem-doacoes {
+    text-align: center;
+    margin-top: 3rem;
+    font-size: 1rem;
+    color: #ecf0f1;
+  }
+  .btn-primeira {
+    margin-top: 1rem;
+    display: inline-block;
+    background-color: #007bff;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .btn-primeira:hover {
+    background-color: #0056b3;
+  }
+  .btn-voltar {
+    display: inline-block;
+    background-color: #6c757d;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 0.9rem;
+    margin-top: 1.5rem;
+  }
+  .btn-voltar:hover {
+    background-color: #5a6268;
+  }
+</style>
+
+<div class="container-painel">
+  <h3>Painel de Contribuições</h3>
+
+  {% if doacoes %}
+    <table class="table-painel">
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Apadrinhado</th>
+          <th>Tipo</th>
+          <th>Valor (R$)</th>
+          <th>Status</th>
+          <th>Descrição</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for doacao in doacoes %}
+          <tr>
+            <td>{{ doacao.data|date:"d/m/Y H:i" }}</td>
+            <td>{{ doacao.apadrinhado.nome }}</td>
+            <td>{{ doacao.get_tipo_display }}</td>
+            <td>
+              {% if doacao.tipo == 'financeira' %}
+                {{ doacao.valor|floatformat:2 }}
+              {% else %}
+                —
+              {% endif %}
+            </td>
+            <td>
+              {% if doacao.sucesso %}
+                <span class="badge-sucesso">Sucesso</span>
+              {% else %}
+                <span class="badge-falha">Falha</span><br>
+                <small style="color:#555;">{{ doacao.mensagem_erro }}</small>
+              {% endif %}
+            </td>
+            <td>{{ doacao.descricao|default_if_none:"—" }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <!-- Botão “Voltar ao Impacto” fica AQUI, após a tabela -->
+    <a href="{% url 'impacto' %}" class="btn-voltar">← Voltar</a>
+
+  {% else %}
+    <div class="sem-doacoes">
+      Você ainda não realizou nenhuma doação.
+      <br>
+      <a href="{% url 'realizar_doacao' %}" class="btn-primeira">Fazer primeira doação</a>
+    </div>
+
+    <!-- Se não há doações, botã “Voltar ao Impacto” também aparece abaixo -->
+    <div style="text-align: center;">
+      <a href="{% url 'impacto' %}" class="btn-voltar">← Voltar</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
