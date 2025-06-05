@@ -179,7 +179,7 @@
   {% if request.user.perfil.tipo_usuario == 'administrador' %}
     <form method="post" class="form-resposta">
       {% csrf_token %}
-      <textarea name="texto_resposta" placeholder="Digite sua resposta para {{ apadrinhado.nome }}..." required></textarea>
+      <textarea name="texto_resposta" placeholder="Digite sua resposta" required></textarea>
       <button type="submit">Enviar Resposta</button>
     </form>
   {% endif %}
