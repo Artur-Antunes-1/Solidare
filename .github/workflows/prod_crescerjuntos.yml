@@ -44,22 +44,21 @@ jobs:
           pip install -r requirements.txt
           python manage.py migrate --noinput
 
-      # 6) Inicia o servidor Django em background
-      - name: Start Django server in background
+      - name: Run local server and tests
         run: |
-          source venv/bin/activate
-          nohup python manage.py runserver 0.0.0.0:8000 &
+          python manage.py migrate
+          python manage.py runserver &
+          sleep 5
+          npx cypress run
 
-      # 7) Aguarda até que o Django esteja respondendo em http://localhost:8000
-      - name: Wait for Django to be ready
-        run: npx wait-on http://localhost:8000
-
-      # 8) Roda os testes do Cypress (headless)
-      - name: Run Cypress tests
+      
+      - name: Cleaning testing files
         run: |
-          npx cypress run --headless
-        env:
-          CYPRESS_baseUrl: http://localhost:8000
+          rm .env
+          rm cypress.config.js
+          rm package-lock.json
+          rm package.json
+          rm -rf cypress  
 
       # 9) Se os testes passarem, faz login no Azure
       - name: Azure Login
