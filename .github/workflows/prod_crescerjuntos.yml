@@ -35,22 +35,22 @@ jobs:
         env:
           CYPRESS_baseUrl: http://localhost:8000
         # Se precisar subir o servidor Django antes de rodar cypress, descomentar o bloco abaixo:
-        #  - name: Start Django server
-        #    run: |
-        #      python -m venv venv
-        #      source venv/bin/activate
-        #      pip install -r requirements.txt
-        #      python manage.py migrate --noinput
-        #      python manage.py runserver 0.0.0.0:8000 &
+      - name: Start Django server
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+          pip install -r requirements.txt
+          python manage.py migrate --noinput
+          python manage.py runserver 0.0.0.0:8000 &
         #    # Garanta que o servidor esteja 100% up (aguarde alguns segundos)
-        #  - name: Wait for Django to be ready
-        #    run: |
-        #      npx wait-on http://localhost:8000
-        #    # Agora que o Django está rodando, executamos o Cypress
-        #  - name: Run Cypress tests
-        #    run: npx cypress run --headless
-        #    env:
-        #      CYPRESS_baseUrl: http://localhost:8000
+      - name: Wait for Django to be ready
+        run: |
+          npx wait-on http://localhost:8000
+        # Agora que o Django está rodando, executamos o Cypress
+      - name: Run Cypress tests
+        run: npx cypress run --headless
+        env:
+          CYPRESS_baseUrl: http://localhost:8000
 
       # 5) Se todos os testes passarem, faz login no Azure
       - name: Azure Login
