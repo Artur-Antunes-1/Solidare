@@ -12,19 +12,24 @@ urlpatterns = [
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
 
-    path('progresso/<int:aluno_id>/', views.progresso_view, name='progresso'),
+    #Não utilizados
     path('talentos/', views.banco_talentos_view, name='banco_talentos'),
+    path('progresso/<int:aluno_id>/', views.progresso_view, name='progresso'),
+    path('perfil/', views.perfil_view, name='perfil'),
+    path('indicar/', views.indicar_aluno, name='indicar_aluno'),
+    path('contratar/', views.registrar_contratacao, name='registrar_contratacao'),
+    path('sucesso/', lambda request: render(request, 'sucesso.html'), name='sucesso_contratacao'),
+
+    #apadrinhamento parte do colaborador
     path('apadrinhar/', views.apadrinhamento_view, name='apadrinhar'),
     path('apadrinhar/<int:apadrinhado_id>/', views.apadrinhar_detalhes, name='apadrinhar_detalhes'),
-    path('perfil/', views.perfil_view, name='perfil'),
+    path('meus_apadrinhados/', views.meus_apadrinhados_view, name='meus_apadrinhados'),
+
+    #apadrinhamento parte do administrador
     path('registrar/apadrinhado/', views.registrar_apadrinhado_view, name='registrar_apadrinhado'),
     path('apadrinhados/', views.lista_apadrinhados, name='lista_apadrinhados'),
     path('apadrinhados/editar<int:apadrinhado_id>/editar', views.editar_apadrinhados, name='editar_apadrinhado'),
     path('apadrinhados/excluir<int:apadrinhado_id>/excluir', views.excluir_apadrinhado, name='excluir_apadrinhado'),
-    path('meus_apadrinhados/', views.meus_apadrinhados_view, name='meus_apadrinhados'),
-    path('indicar/', views.indicar_aluno, name='indicar_aluno'),
-    path('contratar/', views.registrar_contratacao, name='registrar_contratacao'),
-    path('sucesso/', lambda request: render(request, 'sucesso.html'), name='sucesso_contratacao'),
     
     #Mensagens
     path('mensagens/', views.mensagens_view, name='mensagens'),
