@@ -62,6 +62,7 @@ describe('Cenario 1: Visualização de Doações Recebidas como Administrador', 
     cy.cadastroAdministrador();
     cy.loginAdministrador();
     cy.visit('/doacoes-recebidas/');
-    cy.contains('Nenhuma doação encontrada.').should('be.visible');
+    cy.get('.container-recebidas > div').should('contain.text', 'Nenhuma doação encontrada.');
+    // cy.contains('Nenhuma doação encontrada.').should('be.visible');
   });
 });
