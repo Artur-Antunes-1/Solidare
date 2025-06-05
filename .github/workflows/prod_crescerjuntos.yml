@@ -16,59 +16,68 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0   # para garantir que temos todo o histórico de git (útil para cypress e git commands, se houver)
+          fetch-depth: 0
 
-      # 2) Instala Node.js (necessário para rodar Cypress)
+      # 2) Instala Node.js (necessário para Cypress e wait-on)
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '16.x'  # você pode usar 14.x, 16.x ou 18.x conforme sua versão do Cypress
+          node-version: '16.x'
 
-      # 3) Instala dependências Node (Cypress e demais libs JS)
+      # 3) Instala dependências Node (Cypress, wait-on, etc)
       - name: Install npm dependencies
         run: npm ci
-        working-directory: ./   # assume o package.json na raiz do repositório
+        working-directory: ./   # assume que o package.json está na raiz
 
-      # 4) Roda os testes do Cypress (headless)
-      - name: Run Cypress tests
-        run: npx cypress run --headless
-        env:
-          CYPRESS_baseUrl: http://localhost:8000
-        # Se precisar subir o servidor Django antes de rodar cypress, descomentar o bloco abaixo:
-      - name: Start Django server
+      # 4) Instala Python (para rodar Django)
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'  # ou a versão que seu projeto usa
+
+      # 5) Instala dependências Python e faz migrate
+      - name: Install Python dependencies and Migrate
         run: |
           python -m venv venv
           source venv/bin/activate
+          pip install --upgrade pip
           pip install -r requirements.txt
           python manage.py migrate --noinput
-          python manage.py runserver 0.0.0.0:8000 &
-        #    # Garanta que o servidor esteja 100% up (aguarde alguns segundos)
-      - name: Wait for Django to be ready
+
+      # 6) Inicia o servidor Django em background
+      - name: Start Django server in background
         run: |
-          npx wait-on http://localhost:8000
-        # Agora que o Django está rodando, executamos o Cypress
+          source venv/bin/activate
+          nohup python manage.py runserver 0.0.0.0:8000 &
+
+      # 7) Aguarda até que o Django esteja respondendo em http://localhost:8000
+      - name: Wait for Django to be ready
+        run: npx wait-on http://localhost:8000
+
+      # 8) Roda os testes do Cypress (headless)
       - name: Run Cypress tests
-        run: npx cypress run --headless
+        run: |
+          npx cypress run --headless
         env:
           CYPRESS_baseUrl: http://localhost:8000
 
-      # 5) Se todos os testes passarem, faz login no Azure
+      # 9) Se os testes passarem, faz login no Azure
       - name: Azure Login
         if: ${{ success() }}
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      # 6) Faz o deploy para o Web App
+      # 10) Faz o deploy para o Web App
       - name: Deploy to Web App
         if: ${{ success() }}
         uses: azure/webapps-deploy@v3
         with:
-          app-name: crescer-juntos        
-          slot-name: Production            # ou o slot que estiver usando
+          app-name: crescer-juntos       # substitua pelo nome do seu Web App
+          slot-name: Production
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
 
-      # 7) (Opcional) Notificar em caso de falha nos testes
+      # 11) (Opcional) Notificar em caso de falha nos testes
       - name: Notify on failure
         if: ${{ failure() }}
         run: echo "🚨 Algum teste falhou! O deploy NÃO será efetuado."
