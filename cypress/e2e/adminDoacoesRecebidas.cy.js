@@ -1,6 +1,6 @@
 // cypress/e2e/adminDoacoesRecebidas.cy.js
 
-describe('Visualização de Doações Recebidas como Administrador', () => {
+describe('Cenario 1: Visualização de Doações Recebidas como Administrador', () => {
   beforeEach(() => {
     cy.deleteUsers();
     cy.deleteApadrinhados();
@@ -10,7 +10,7 @@ describe('Visualização de Doações Recebidas como Administrador', () => {
     cy.visit('/');
   });
 
-  it('Administrador vê todas as doações registradas', () => {
+  it('Cenario 2: Administrador vê todas as doações registradas', () => {
     // Cadastra e loga Admin
     cy.cadastroAdministrador();
     cy.loginAdministrador();

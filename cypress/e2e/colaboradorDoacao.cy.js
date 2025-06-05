@@ -10,7 +10,7 @@ describe('Fluxo de Doação como Colaborador', () => {
     cy.visit('/');
   });
 
-  it('Colaborador faz doação financeira com sucesso', () => {
+  it('Cenario 1: Colaborador faz doação financeira com sucesso', () => {
     // Cadastra e loga Admin
     cy.cadastroAdministrador();
     cy.loginAdministrador();
@@ -46,7 +46,7 @@ describe('Fluxo de Doação como Colaborador', () => {
     });
   });
 
-  it('Colaborador tenta doar sem preencher valor financeiro e recebe erro', () => {
+  it('Cenario 2: Colaborador tenta doar sem preencher valor financeiro e recebe erro', () => {
     cy.cadastroAdministrador();
     cy.loginAdministrador();
 
