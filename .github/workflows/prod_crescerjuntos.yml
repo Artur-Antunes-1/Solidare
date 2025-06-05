@@ -83,8 +83,8 @@ jobs:
         if: ${{ success() }}
         uses: azure/webapps-deploy@v3
         with:
-          app-name: crescer-juntos       # substitua pelo nome do seu Web App
-          slot-name: Production
+          app-name: 'crescer-juntos'       # substitua pelo nome do seu Web App
+          slot-name: 'Production'
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
 
       # 11) (Opcional) Notificar em caso de falha nos testes
