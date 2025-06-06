@@ -247,7 +247,7 @@ Aplicação web do programa de apadrinhamento dos alunos do Projeto Alvo Certo, 
   [Link para as Histórias](https://docs.google.com/document/d/1LhCymEJ4g4B4Pyp8Aw-aXz103KHfBuQ9wGO2JfETQUw/edit?tab=t.0)
   ## Screencasts
 
-  [Screencast do Crescer Juntos](https://youtu.be/JqBmZQOWR1U)
+  [Screencast do Crescer Juntos](https://youtu.be/PkGEu5mDCf4)
   
   [CI/CD Crescer juntos](https://www.youtube.com/watch?v=Y310t7Hvnbw)
   
