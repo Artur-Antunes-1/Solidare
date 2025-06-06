@@ -121,3 +121,33 @@ Aplicação web do programa de apadrinhamento dos alunos do Projeto Alvo Certo, 
 
    ![bug4](media/fotos_perfil/bug4.png)
 </details>
+
+<details>
+  <summary>✅Status report 2</summary>
+
+  ## Histórias implementadas
+
+  ### História  nº 1: Realizar Doações
+
+  Como colaborador, quero realizar doações financeiras ou materiais para ajudar o aluno apadrinhado, garantindo que minha contribuição será usada de forma transparente.
+ 
+   **Cenario 1** :
+   **Dado** que o colaborador acessa a página de doações,
+    
+   **Quando** ele seleciona um valor, escolhe um método de pagamento e confirma a transação,
+    
+   **Então** a doação deve ser processada com sucesso, e um comprovante deve ser gerado.
+   
+   **Cenario 2**:
+   **Dado** que o colaborador fez uma doação para um aluno,
+   
+   **Quando** ele acessar o painel de contribuições,
+    
+   **Então** ele deve visualizar informações detalhadas sobre como sua doação foi utilizada (exemplo: material escolar comprado, taxa de matrícula paga, etc.).
+
+   **Cenario 3**:
+   **Dado** que o colaborador tenta realizar uma doação,
+   
+   **Quando** houver falha na transação (como cartão inválido, saldo insuficiente ou erro no processamento do pagamento),
+    
+   **Então** o sistema deve exibir uma mensagem de erro informando o motivo da falha e sugerindo alternativas para completar a doação.
