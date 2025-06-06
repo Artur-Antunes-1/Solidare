@@ -255,27 +255,35 @@ Aplicação web do programa de apadrinhamento dos alunos do Projeto Alvo Certo, 
 
   ## Diagrama de atividades
   História 1: Cadastro de apadrinhados(admin)
+  
   ![Diagrama1](media\fotos_perfil\diagrama1.png)
 
   História 2: Apadrinhamento(colaborador)
+  
   ![Diagrama2](media\fotos_perfil\diagrama2.png) 
 
   História 3: Fazer doação(colaborador)
+  
   ![Diagrama3](media\fotos_perfil\diagrama7.png)
 
   História 4: Visualização das doações(admin)
+  
   ![Diagrama4](media\fotos_perfil\diagrama8.png)
 
   História 5: Gerenciamento do progresso dos alunos(admin)
+  
   ![Diagrama5](media\fotos_perfil\diagrama3.png)
 
   História 6: Visualização do progresso(colaborador)
+  
   ![Diagrama6](media\fotos_perfil\diagrama4.png)
 
   História 7: Mensagens entre colaborador e administrador
+  
   ![Diagrama7](media\fotos_perfil\diagrama6.png)
 
   História 8: Agendar visita à apadrinhado(colaborador)
+  
   ![Diagrama8](media\fotos_perfil\diagrama5.png)
 
   ## Deployment
@@ -288,4 +296,5 @@ Aplicação web do programa de apadrinhamento dos alunos do Projeto Alvo Certo, 
   ![Storyboards](media\fotos_perfil\storyboard2.jpg)
   
   ## Bugtracker
+  
   ![bugtracker](media\fotos_perfil\Closedbugs.png)
